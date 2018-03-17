@@ -11,11 +11,11 @@ Grupo A17
 
 
 -------------------------------------------------------------------------------
-Como correr por enquanto:
-    * cd station-ws
-    * mvn generate-sources
-    * mvn compile exec:java
-    * (outro terminal)
+- Como correr por enquanto:
+    * cd station-ws;
+    * mvn generate-sources;
+    * mvn compile exec:java;
+    * (outro terminal);
     * cd station-ws-cli
     * mvn generate-sources
     * mvn compile exec:java
