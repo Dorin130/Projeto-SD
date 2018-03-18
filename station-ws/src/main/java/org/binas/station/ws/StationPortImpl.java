@@ -50,7 +50,7 @@ public class StationPortImpl implements StationPortType {
         try {
             result = s.returnBina();
         } catch (NoSlotAvailException e) {
-            throw new NoSlotAvail_Exception("There is no slot available.", new NoSlotAvail());
+        	throwNoSlotAvail("There is no slot available.");
         }
         return result;
     }
@@ -62,7 +62,7 @@ public class StationPortImpl implements StationPortType {
         try {
             s.getBina();
         } catch (NoBinaAvailException e) {
-            throw new NoBinaAvail_Exception("There is no Bina available.", new NoBinaAvail());
+        	throwNoBinaAvail("There is no Bina available.");
         }
     }
 
