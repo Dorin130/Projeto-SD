@@ -1,0 +1,7 @@
+cd station-ws
+mvn generate-sources
+mvn compile exec:java
+(noutro terminal)
+cd station-ws-cli
+mvn generate-sources
+mvn verify
