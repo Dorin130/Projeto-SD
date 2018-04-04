@@ -7,7 +7,7 @@ public class StationClientApp {
 
 	public static void main(String[] args) throws Exception {
 		// Check arguments.
-		if (args.length == 0) {
+		if (args.length != 1 && args.length != 2) {
 			System.err.println("Argument(s) missing!");
 			System.err.println("Usage: java " + StationClientApp.class.getName() + " wsURL OR uddiURL wsName");
 			return;

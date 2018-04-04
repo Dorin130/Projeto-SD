@@ -1,5 +1,7 @@
 package org.binas.station.ws;
 
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+
 import java.io.IOException;
 
 import javax.xml.ws.Endpoint;
@@ -23,21 +25,21 @@ public class StationEndpointManager {
 	/** Port implementation */
 	private StationPortImpl portImpl = new StationPortImpl(this);
 
-	// /** Obtain Port implementation */
-	// public StationPortType getPort() {
-	// return portImpl;
-	// }
+//	 /** Obtain Port implementation */
+//	 public StationPortType getPort() {
+//	 return portImpl;
+//	 }
 
 	/** Web Service end point */
 	private Endpoint endpoint = null;
 
-	// /** UDDI Naming instance for contacting UDDI server */
-	// private UDDINaming uddiNaming = null;
-	//
-	// /** Get UDDI Naming instance for contacting UDDI server */
-	// UDDINaming getUddiNaming() {
-	// return uddiNaming;
-	// }
+	/** UDDI Naming instance for contacting UDDI server */
+	private UDDINaming uddiNaming = null;
+
+	/** Get UDDI Naming instance for contacting UDDI server */
+	UDDINaming getUddiNaming() {
+		return uddiNaming;
+	}
 
 	/** output option */
 	private boolean verbose = true;
@@ -51,7 +53,7 @@ public class StationEndpointManager {
 	}
 
 	/** constructor with provided UDDI location, WS name, and WS URL */
-	public StationEndpointManager(String uddiURL, String wsName, String wsURL) {
+	public StationEndpointManager(String wsName, String wsURL, String uddiURL) {
 		this.uddiURL = uddiURL;
 		this.wsName = wsName;
 		this.wsURL = wsURL;
@@ -118,12 +120,18 @@ public class StationEndpointManager {
 
 	/* UDDI */
 
-	void publishToUDDI() throws Exception {
-		// TODO
+	private void publishToUDDI() throws Exception {
+		System.out.printf("Publishing '%s' to UDDI at %s%n", wsName, uddiURL);
+		uddiNaming = new UDDINaming(uddiURL);
+		uddiNaming.rebind(wsName, wsURL);
 	}
 
-	void unpublishFromUDDI() {
-		// TODO
+	private void unpublishFromUDDI() throws Exception {
+		if (uddiNaming != null) {
+			// delete from UDDI
+			uddiNaming.unbind(wsName);
+			System.out.printf("Deleted '%s' from UDDI%n", wsName);
+		}
 	}
 
 }

@@ -24,11 +24,13 @@
 
 		<!-- instance number -->
 		<ws.i>1</ws.i>
-		<uddi.url>http://localhost:9090</uddi.url>
+		<uddi.user>a17</uddi.user>
+		<uddi.pass>3VRki4z</uddi.pass>
+		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 
 		<group.id>A17</group.id>
 
-		<ws.name>${group.id}_Station${ws.i}</ws.name>
+		<ws.name>${group.id}_Station</ws.name>
 		<ws.host>localhost</ws.host>
 		<ws.port>808${ws.i}</ws.port>
 		<ws.url>http://${ws.host}:${ws.port}/station-ws/endpoint</ws.url>
@@ -45,6 +47,11 @@
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>pt.ulisboa.tecnico.sdis</groupId>
+			<artifactId>uddi-naming</artifactId>
+			<version>1.2</version>
 		</dependency>
 	</dependencies>
 
@@ -106,7 +113,8 @@
 					<killAfter>-1</killAfter>
 					<mainClass>${mainclass}</mainClass>
 					<arguments>
-						<argument>${ws.url}</argument>
+						<argument>${uddi.url}</argument>
+						<argument>${ws.name}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

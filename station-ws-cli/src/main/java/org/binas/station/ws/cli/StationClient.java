@@ -1,6 +1,8 @@
 package org.binas.station.ws.cli;
 
 import org.binas.station.ws.*;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
 import javax.xml.ws.BindingProvider;
 import java.util.Map;
@@ -62,7 +64,13 @@ public class StationClient implements StationPortType {
 
 	/** UDDI lookup */
 	private void uddiLookup() throws StationClientException {
-		// TODO
+		UDDINaming uddiNaming;
+		try {
+			uddiNaming = new UDDINaming(uddiURL);
+			wsURL = uddiNaming.lookup(wsName+"%");
+		} catch (UDDINamingException e) {
+			e.printStackTrace();
+		}
 	}
 
 
