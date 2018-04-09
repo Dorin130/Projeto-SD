@@ -18,7 +18,9 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 
 		<mainclass>org.binas.ws.BinasApp</mainclass>
-		<uddi.url>http://localhost:9090</uddi.url>
+		<uddi.user>a17</uddi.user>
+		<uddi.pass>3VRki4z</uddi.pass>
+		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 		<group.id>A17</group.id>
 
 		<ws.name>${group.id}_Binas</ws.name>
@@ -32,6 +34,11 @@
 			<groupId>com.sun.xml.ws</groupId>
 			<artifactId>jaxws-rt</artifactId>
 			<version>2.2.10</version>
+		</dependency>
+		<dependency>
+			<groupId>pt.ulisboa.tecnico.sdis</groupId>
+			<artifactId>uddi-naming</artifactId>
+			<version>1.2</version>
 		</dependency>
 	</dependencies>
 
