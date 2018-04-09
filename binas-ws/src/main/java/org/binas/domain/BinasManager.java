@@ -19,6 +19,11 @@ public class BinasManager {
 		return SingletonHolder.INSTANCE;
 	}
 
+	public void setId(String wsName) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 	// TODO
 
