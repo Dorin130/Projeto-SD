@@ -1,10 +1,21 @@
 package org.binas.domain;
 
-public class BinasManager {
+import java.util.ArrayList;
+
+public class BinasManager  {
 
 	// Singleton -------------------------------------------------------------
-
+	/*public StationView listStations(int numberOfStations, CoordinatesView coordinates) {}
+	getCredit
+	activateUser
+	rentBina
+	returnBina
+	test_ping
+	test_clear
+	test_init_station
+	test_init*/
 	private BinasManager() {
+
 	}
 
 	/**
@@ -22,8 +33,25 @@ public class BinasManager {
 	public void setId(String wsName) {
 		// TODO Auto-generated method stub
 	}
+	//Obter informaçao feito no impl
+	public synchronized void ActivateUser(String emailAddress) {
+		//TODO
+	}
+	public synchronized  void getBina(String stationId) {
+		//TODO
+	}
 
-	
-	// TODO
+	public synchronized  void returnBina(String stationId) {
+		//TODO
+	}
+	//ArrayList de station IDs
+	//Criar class Coordinates ou adicionar dependencia no pom?
+	public synchronized ArrayList<String> listarEstacoes(int k, Coordinates coordinates) {
+		//TODO
+	}
+
+	public synchronized double checkBalance(String userEmail) {
+		//TODO
+	}
 
 }
