@@ -21,7 +21,6 @@ public class BinasManager {
 
 	public void setId(String wsName) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	
