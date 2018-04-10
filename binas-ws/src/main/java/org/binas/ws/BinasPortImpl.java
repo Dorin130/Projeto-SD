@@ -47,9 +47,7 @@ public class BinasPortImpl implements BinasPortType {
      * @return
      *     returns java.util.List<org.binas.ws.StationView>
      */
-    public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
-		return null; //TODO
-    }
+    public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) { return null; //TODO }
 
     /**
      * 

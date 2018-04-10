@@ -1,19 +1,14 @@
 package org.binas.domain;
 
+import org.binas.station.ws.cli.StationClient;
+import org.binas.ws.CoordinatesView;
+import org.binas.ws.StationView;
+
 import java.util.ArrayList;
 
 public class BinasManager  {
-
+    private static final String stationPrefix  = "";
 	// Singleton -------------------------------------------------------------
-	/*public StationView listStations(int numberOfStations, CoordinatesView coordinates) {}
-	getCredit
-	activateUser
-	rentBina
-	returnBina
-	test_ping
-	test_clear
-	test_init_station
-	test_init*/
 	private BinasManager() {
 
 	}
@@ -25,6 +20,10 @@ public class BinasManager  {
 	private static class SingletonHolder {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
+
+	/*public static  synchronized ArrayList<StationClient> FindActiveStations() {
+
+    }*/
 
 	public static synchronized BinasManager getInstance() {
 		return SingletonHolder.INSTANCE;
@@ -46,11 +45,13 @@ public class BinasManager  {
 	}
 	//ArrayList de station IDs
 	//Criar class Coordinates ou adicionar dependencia no pom?
-	public synchronized ArrayList<String> listarEstacoes(int k, Coordinates coordinates) {
+	public synchronized ArrayList<String> listStations(int k, CoordinatesView coordinates) {
 		//TODO
+        return null;
 	}
 
 	public synchronized double checkBalance(String userEmail) {
+		return new Double(null);
 		//TODO
 	}
 
