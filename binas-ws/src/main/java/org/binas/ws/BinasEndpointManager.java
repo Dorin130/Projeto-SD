@@ -83,7 +83,10 @@ public class BinasEndpointManager {
             }
             throw e;
         }
-        publishToUDDI();
+        if(uddiURL != null) {
+        	publishToUDDI();     
+        }
+
     }
 
     public void awaitConnections() {
