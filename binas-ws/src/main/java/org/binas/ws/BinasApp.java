@@ -1,5 +1,7 @@
 package org.binas.ws;
 
+import org.binas.domain.BinasManager;
+
 public class BinasApp {
 
 	public static void main(String[] args) throws Exception {
@@ -22,7 +24,7 @@ public class BinasApp {
 			endpoint = new BinasEndpointManager(wsName, wsURL);
 		}
 
-		Binas.getInstance().setId(wsName);
+		BinasManager.getInstance().setId(wsName);
 
 		System.out.println(BinasApp.class.getSimpleName() + " running");
 
