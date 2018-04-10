@@ -30,7 +30,7 @@
 
 		<group.id>A17</group.id>
 
-		<ws.name>${group.id}_Station</ws.name>
+		<ws.name>${group.id}_Station${ws.i}</ws.name>
 		<ws.host>localhost</ws.host>
 		<ws.port>808${ws.i}</ws.port>
 		<ws.url>http://${ws.host}:${ws.port}/station-ws/endpoint</ws.url>
