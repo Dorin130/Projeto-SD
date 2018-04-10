@@ -33,9 +33,11 @@ public class BinasManager  {
 	public void setId(String wsName) {
 		// TODO Auto-generated method stub
 	}
+	
 	//Obter informaçao feito no impl
 	public synchronized void ActivateUser(String emailAddress) {
 		//TODO
+		
 	}
 	public synchronized  void getBina(String stationId) {
 		//TODO
@@ -45,13 +47,13 @@ public class BinasManager  {
 		//TODO
 	}
 	//ArrayList de station IDs
-	//Criar class Coordinates ou adicionar dependencia no pom?
+	//Criar class Coordinates ou adicionar dependencia no pom? 
+	/*
 	public synchronized ArrayList<String> listarEstacoes(int k, Coordinates coordinates) {
 		//TODO
 	}
 
 	public synchronized double checkBalance(String userEmail) {
 		//TODO
-	}
-
+	}*/
 }
