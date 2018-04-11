@@ -1,6 +1,7 @@
 package org.binas.ws;
 
 import org.binas.domain.BinasManager;
+import org.binas.domain.User;
 
 import java.util.List;
 
@@ -12,6 +13,11 @@ import javax.xml.ws.Action;
 import javax.xml.ws.FaultAction;
 import javax.xml.ws.RequestWrapper;
 import javax.xml.ws.ResponseWrapper;
+
+import org.binas.domain.exception.BadInitException;
+import org.binas.domain.exception.EmailExistsException;
+import org.binas.domain.exception.InvalidEmailException;
+import org.binas.domain.exception.UserNotExistsException;
 
 /**
  * This class implements the Web Service port type (interface). The annotations
@@ -73,10 +79,18 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public int getCredit(String email) throws UserNotExists_Exception {
-		return 0; //TODO
+    	BinasManager bm = BinasManager.getInstance();
+    	int credit = 0;
+    	try {
+    		credit = bm.getCredit(email);
+    	} catch (UserNotExistsException e) {
+    		throwUserNotExists("There is no user with this email");
+    	}
+		return credit;
     }
 
-    /**
+
+	/**
      * 
      * @param email
      * @return
@@ -85,10 +99,22 @@ public class BinasPortImpl implements BinasPortType {
      * @throws InvalidEmail_Exception
      */
     public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
-		return null; //TODO
-    }
+    	BinasManager bm = BinasManager.getInstance();
+    	UserView view = null;
+    	try {
+        	User user = bm.activateUser(email);
+        	synchronized(user) {
+            	view = buildUserView(user);
+        	}
+    	} catch (EmailExistsException e) {
+    		throwEmailExists("This email is already in use");
+    	} catch (InvalidEmailException e) {
+    		throwInvalidEmail("This email is invalid");
+    	}
+    	return view;
+    } //TODO ask teacher about this method
 
-    /**
+	/**
      * 
      * @param email
      * @param stationId
@@ -175,13 +201,14 @@ public class BinasPortImpl implements BinasPortType {
 
     // View helpers ----------------------------------------------------------
 
-    /** Helper to convert a domain coordinates to a view. *//*
-    private UserView buildUserView(Coordinates coordinates) {
-        CoordinatesView view = new CoordinatesView();
-        view.setX(coordinates.getX());
-        view.setY(coordinates.getY());
-        return view;
-    }*/
+    /** Helper to convert user to a user view. */
+    private UserView buildUserView(User user) {
+    	UserView userView = new UserView();
+    	userView.setEmail(user.getEmail());
+    	userView.setHasBina(user.isHasBina());
+    	userView.setCredit(user.getCredit());
+        return userView;
+    }
 
     // Exception helpers -----------------------------------------------------
 
@@ -200,4 +227,21 @@ public class BinasPortImpl implements BinasPortType {
         throw new BadInit_Exception(message, faultInfo);
     }
 
+    private void throwInvalidEmail(String message) throws InvalidEmail_Exception {
+    	InvalidEmail faultInfo = new InvalidEmail();
+        faultInfo.message = message;
+        throw new InvalidEmail_Exception(message, faultInfo);
+	}
+    
+    private void throwEmailExists(String message) throws EmailExists_Exception {
+    	EmailExists faultInfo = new EmailExists();
+        faultInfo.message = message;
+        throw new EmailExists_Exception(message, faultInfo);
+	}
+    
+    private void throwUserNotExists(String message) throws UserNotExists_Exception {
+		UserNotExists faultInfo = new UserNotExists();
+		faultInfo.message = message;
+		throw new UserNotExists_Exception(message, faultInfo);	
+	}
 }

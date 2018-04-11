@@ -1,5 +1,8 @@
 package org.binas.domain;
 
+import org.binas.domain.exception.EmailExistsException;
+import org.binas.domain.exception.InvalidEmailException;
+import org.binas.domain.exception.UserNotExistsException;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.ws.CoordinatesView;
 import org.binas.ws.StationView;
@@ -39,12 +42,19 @@ public class BinasManager  {
 	}
 	
 	//Obter informaçao feito no impl
-	public synchronized User activateUser(String emailAddress) {
-		User newUser = new User(emailAddress, false, INITIAL_CREDIT)
+	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
+		//TODO invalid email address throw
+		if(hasEmail(emailAddress)) throw new EmailExistsException();
+		User newUser = new User(emailAddress, false, INITIAL_CREDIT);
 		users.put(emailAddress, newUser);
 		return newUser;
 		
 	}
+	
+	public boolean hasEmail(String email) {
+		return users.containsKey(email);
+	}
+	
 	public synchronized  void getBina(String stationId) {
 		//TODO
 	}
@@ -61,7 +71,8 @@ public class BinasManager  {
         return null;
 	}
 
-	public synchronized int getCredit(String userEmail) {
+	public synchronized int getCredit(String userEmail) throws UserNotExistsException {
+		if(!hasEmail(userEmail)) throw new UserNotExistsException();
 		return users.get(userEmail).getCredit();
 	}
 }
