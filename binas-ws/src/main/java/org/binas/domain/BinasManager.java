@@ -5,19 +5,15 @@ import org.binas.domain.exception.InvalidEmailException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
-import org.binas.ws.CoordinatesView;
+import org.binas.station.ws.CoordinatesView;
 import org.binas.ws.StationView;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
-import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Collection;
+import java.util.*;
+
 
 public class BinasManager  {
-    private static final String stationPrefix  = "";
     private static final int INITIAL_CREDIT = 10;
     private static final String wsName  = "A17_Station";
 
@@ -35,7 +31,7 @@ public class BinasManager  {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
 
-	public static synchronized ArrayList<StationClient> FindActiveStations(String uddiURL) {
+	public synchronized ArrayList<StationClient> findActiveStations(String uddiURL) {
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>(0);
 		UDDINaming uddiNaming;
 		try {
@@ -84,10 +80,18 @@ public class BinasManager  {
 	//ArrayList de station IDs
 
 	//Criar class Coordinates ou adicionar dependencia no pom?
-	public synchronized ArrayList<String> listStations(int k, CoordinatesView coordinates) {
+	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
+        ArrayList<StationClient> stations = this.findActiveStations(uddiURL);
+        stations.sort(new CoordinatesComparator(coordinates));
+        if(k > stations.size()) {
+            return stations;
+        }
+        for(int i=stations.size(); i > stations.size() - k; i--  ) {
+            stations.remove(i);
+        }
+        stations.trimToSize();
+        return stations;
 
-		//TODO
-        return null;
 	}
 	
 	public StationView getStationView(int stationId, String uddiURL) {
