@@ -9,10 +9,16 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Collection;
 
 public class BinasManager  {
+    private static final String stationPrefix  = "";
+    private static final int INITIAL_CREDIT = 10;
     private static final String wsName  = "A17_Station";
+
+    private Map<String, User> users = new HashMap<>();
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
 
@@ -52,8 +58,10 @@ public class BinasManager  {
 	}
 	
 	//Obter informaçao feito no impl
-	public synchronized void ActivateUser(String emailAddress) {
-		//TODO
+	public synchronized User activateUser(String emailAddress) {
+		User newUser = new User(emailAddress, false, INITIAL_CREDIT);
+		users.put(emailAddress, newUser);
+		return newUser;
 		
 	}
 	public synchronized  void getBina(String stationId) {
@@ -72,8 +80,7 @@ public class BinasManager  {
         return null;
 	}
 
-	public synchronized double checkBalance(String userEmail) {
-		return new Double(null);
-		//TODO
+	public synchronized int getCredit(String userEmail) {
+		return users.get(userEmail).getCredit();
 	}
 }
