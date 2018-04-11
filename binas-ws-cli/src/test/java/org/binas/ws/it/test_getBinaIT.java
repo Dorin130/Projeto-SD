@@ -60,7 +60,7 @@ public class test_getBinaIT extends BaseIT {
     @Test(expected=InvalidStation_Exception.class)
     public void getBinaFailUserNotExists() throws AlreadyHasBina_Exception, NoBinaAvail_Exception,
             NoCredit_Exception, InvalidStation_Exception, UserNotExists_Exception {
-        client.rentBina("InvalidStation", USER);
+        client.rentBina("077008bf6e58c3cd21bb1f5107e5b214c9a89ef0", USER);
     }
 
     @After
