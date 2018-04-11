@@ -22,6 +22,8 @@ public class BinasManager  {
     private static final String wsName  = "A17_Station";
 
     private Map<String, User> users = new HashMap<>();
+	private String uddiURL = null; //TODO CHECK END OF DOCUMENT for info on this
+	
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
 
@@ -35,7 +37,7 @@ public class BinasManager  {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
 
-	public static synchronized ArrayList<StationClient> FindActiveStations(String uddiURL) {
+	public synchronized ArrayList<StationClient> findActiveStations(/*String uddiURL*/) {
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>(0);
 		UDDINaming uddiNaming;
 		try {
@@ -94,7 +96,7 @@ public class BinasManager  {
 		return null; //TODO
 	}
 	
-	private StationClient getStationClient(int stationId, String uddiURL) {
+	private StationClient getStationClient(int stationId) {
 		StationClient stationClient = null;
 		try {
 			stationClient = new StationClient(uddiURL, Integer.toString(stationId));
@@ -107,5 +109,11 @@ public class BinasManager  {
 	public synchronized int getCredit(String userEmail) throws UserNotExistsException {
 		if(!hasEmail(userEmail)) throw new UserNotExistsException();
 		return users.get(userEmail).getCredit();
+	}
+
+	//TODO SO UGLY, CHANGE THIS, ASK TEACHER, DO ANYTHING BUT THIS
+	public void setUDDIurl(String uddiURL) {
+		if(this.uddiURL == null)
+			this.uddiURL = uddiURL;
 	}
 }

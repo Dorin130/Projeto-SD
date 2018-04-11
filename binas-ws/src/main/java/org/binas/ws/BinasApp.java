@@ -14,7 +14,7 @@ public class BinasApp {
 
 		String wsName = args[0];
 		String wsURL = args[1];
-		String uddiURL;
+		String uddiURL = null;
 		BinasEndpointManager endpoint;
 
 		if (args.length == 3) {
@@ -25,7 +25,8 @@ public class BinasApp {
 		}
 
 		BinasManager.getInstance().setId(wsName);
-
+		BinasManager.getInstance().setUDDIurl(uddiURL);
+		
 		System.out.println(BinasApp.class.getSimpleName() + " running");
 
 		try {

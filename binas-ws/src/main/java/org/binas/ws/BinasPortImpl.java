@@ -3,6 +3,7 @@ package org.binas.ws;
 import org.binas.domain.BinasManager;
 import org.binas.domain.User;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.jws.WebMethod;
@@ -18,18 +19,19 @@ import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
 import org.binas.domain.exception.InvalidEmailException;
 import org.binas.domain.exception.UserNotExistsException;
+import org.binas.station.ws.cli.StationClient;
 
 /**
  * This class implements the Web Service port type (interface). The annotations
  * below "map" the Java class to the WSDL definitions.
  */
 // TODO
-@WebService(endpointInterface = "org.binas.station.ws.StationPortType",
-        wsdlLocation = "station.1_0.wsdl",
-        name ="StationWebService",
-        portName = "StationPort",
-        targetNamespace="http://ws.station.binas.org/",
-        serviceName = "StationService"
+@WebService(endpointInterface = "org.binas.ws.BinasPortType",
+        wsdlLocation = "binas.1_0.wsdl",
+        name ="BinasWebService",
+        portName = "BinasPort",
+        targetNamespace="http://ws.binas.org/",
+        serviceName = "BinasService"
 )
 public class BinasPortImpl implements BinasPortType {
 
@@ -67,6 +69,7 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public StationView getInfoStation(String stationId) throws InvalidStation_Exception {
+    	
 		return null; //TODO
     }
 
@@ -128,6 +131,7 @@ public class BinasPortImpl implements BinasPortType {
     public void rentBina(String stationId, String email)
         throws AlreadyHasBina_Exception, InvalidStation_Exception, NoBinaAvail_Exception,
         NoCredit_Exception, UserNotExists_Exception {
+    	
     	//TODO
     }
 
@@ -155,19 +159,19 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public String testPing(String inputMessage) {
-        // If no input is received, return a default name.
-        if (inputMessage == null || inputMessage.trim().length() == 0)
-            inputMessage = "friend";
-
-        // If the station does not have a name, return a default.
-        String wsName = endpointManager.getWsName();
-        if (wsName == null || wsName.trim().length() == 0)
-            wsName = "Binas";
-
-        // Build a string with a message to return.
+    	BinasManager bm = BinasManager.getInstance();
+    	ArrayList<StationClient> stationClients = bm.findActiveStations(); //station client here or station view? ask teacher
+        
+    	// Build a string with a message to return.
         StringBuilder builder = new StringBuilder();
-        builder.append("Hello ").append(inputMessage);
-        builder.append(" from ").append(wsName);
+        builder.append("Pinging all known stations with message: \n'").append(inputMessage).append("'\n");
+
+    	for(StationClient stationClient : stationClients) {
+    		builder.append(stationClient.testPing(inputMessage)).append("\n");
+    	}
+
+        builder.append("Pinging Complete!\n");
+
         return builder.toString();
     }
 
