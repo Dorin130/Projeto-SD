@@ -1,10 +1,11 @@
 package org.binas.domain;
 
-import org.binas.ws.CoordinatesView;
+import org.binas.station.ws.cli.StationClient;
+import org.binas.station.ws.CoordinatesView;
 
 import java.util.Comparator;
 
-public class CoordinatesComparator implements Comparator<CoordinatesView> {
+public class CoordinatesComparator implements Comparator<StationClient> {
     private CoordinatesView clientPosition;
 
     public CoordinatesComparator(CoordinatesView clientPosition) {
@@ -16,7 +17,9 @@ public class CoordinatesComparator implements Comparator<CoordinatesView> {
     }
 
     @Override
-    public int compare(CoordinatesView o1, CoordinatesView o2) {
-        return  (int)(calculateDistance(o1.getX(), o1.getY()) - calculateDistance(o2.getX(), o2.getY()));
+    public int compare(StationClient s1, StationClient s2) {
+        CoordinatesView c1 = s1.getInfo().getCoordinate();
+        CoordinatesView c2 = s2.getInfo().getCoordinate();
+        return  (int)(calculateDistance(c1.getX(), c1.getY()) - calculateDistance(c2.getX(), c2.getY()));
     }
 }
