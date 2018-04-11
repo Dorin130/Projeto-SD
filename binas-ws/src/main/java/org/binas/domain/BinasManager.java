@@ -36,13 +36,13 @@ public class BinasManager  {
 	}
 
 	public static synchronized ArrayList<StationClient> FindActiveStations(String uddiURL) {
-		UDDINaming uddiNaming;
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>(0);
+		UDDINaming uddiNaming;
 		try {
 			uddiNaming = new UDDINaming(uddiURL);
-			Collection<UDDIRecord> uddiRecords = uddiNaming.listRecords(wsName+"%");
-			for(UDDIRecord record : uddiRecords) {
-				activeStationClients.add(new StationClient(record.getOrgName(), record.getUrl()));
+			Collection<String> wsURLs = uddiNaming.list(wsName+"%");
+			for(String wsURL : wsURLs) {
+				activeStationClients.add(new StationClient(wsURL));
 			}
 		} catch (UDDINamingException e) {
 			e.printStackTrace();
@@ -88,6 +88,20 @@ public class BinasManager  {
 
 		//TODO
         return null;
+	}
+	
+	public StationView getStationView(int stationId, String uddiURL) {
+		return null; //TODO
+	}
+	
+	private StationClient getStationClient(int stationId, String uddiURL) {
+		StationClient stationClient = null;
+		try {
+			stationClient = new StationClient(uddiURL, Integer.toString(stationId));
+		} catch (StationClientException e) {
+			e.printStackTrace();
+		}
+        return stationClient;
 	}
 
 	public synchronized int getCredit(String userEmail) throws UserNotExistsException {
