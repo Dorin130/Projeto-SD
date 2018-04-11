@@ -1,13 +1,18 @@
 package org.binas.domain;
 
 import org.binas.station.ws.cli.StationClient;
+import org.binas.station.ws.cli.StationClientException;
 import org.binas.ws.CoordinatesView;
 import org.binas.ws.StationView;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDIRecord;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class BinasManager  {
-    private static final String stationPrefix  = "";
+    private static final String wsName  = "A17_Station";
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
 
@@ -21,9 +26,22 @@ public class BinasManager  {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
 
-	/*public static  synchronized ArrayList<StationClient> FindActiveStations() {
-
-    }*/
+	public static synchronized ArrayList<StationClient> FindActiveStations(String uddiURL) {
+		UDDINaming uddiNaming;
+		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>(0);
+		try {
+			uddiNaming = new UDDINaming(uddiURL);
+			Collection<UDDIRecord> uddiRecords = uddiNaming.listRecords(wsName+"%");
+			for(UDDIRecord record : uddiRecords) {
+				activeStationClients.add(new StationClient(record.getOrgName(), record.getUrl()));
+			}
+		} catch (UDDINamingException e) {
+			e.printStackTrace();
+		} catch (StationClientException e) {
+			e.printStackTrace();
+		}
+        return activeStationClients;
+	}
 
 	public static synchronized BinasManager getInstance() {
 		return SingletonHolder.INSTANCE;
