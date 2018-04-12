@@ -11,7 +11,10 @@ import javax.jws.WebService;
 
 import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
+import org.binas.domain.exception.FullStationException;
 import org.binas.domain.exception.InvalidEmailException;
+import org.binas.domain.exception.InvalidStationException;
+import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.station.ws.cli.StationClient;
 
@@ -85,10 +88,10 @@ public class BinasPortImpl implements BinasPortType {
     	
     	StationClient stationClient = bm.getStationClient(stationId);
     	if(stationClient == null) {
-    		throwInvalidStation("The station with ID '" + stationId + "' could not be reached");
+    		throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
     	}
     	
-		return null; //TODO
+    	return buildStationView(stationClient);
     }
 
     /**
@@ -105,7 +108,7 @@ public class BinasPortImpl implements BinasPortType {
     	try {
     		credit = bm.getCredit(email);
     	} catch (UserNotExistsException e) {
-    		throwUserNotExists("There is no user with this email");
+    		throwUserNotExists("There is no user with email '" + email + "'.");
     	}
 		return credit;
     }
@@ -164,9 +167,21 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public void returnBina(String stationId, String email)
-        throws FullStation_Exception, InvalidStation_Exception,
-        NoBinaRented_Exception, UserNotExists_Exception {
-    	//TODO
+        throws FullStation_Exception, InvalidStation_Exception, NoBinaRented_Exception, UserNotExists_Exception {
+    	
+    	BinasManager bm = BinasManager.getInstance();
+    	
+    	try {
+			bm.returnBina(stationId, email);
+		} catch (FullStationException e) {
+			throwFullStation("The station with ID '" + stationId + "' has no slots available (full)");
+		} catch (InvalidStationException e) {
+    		throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
+		} catch (NoBinaRentedException e) {
+			throwNoBinaRented("The user with email '" + email + "' was not renting a bina");
+		} catch (UserNotExistsException e) {
+			throwUserNotExists("There is no user with email '" + email + "'.");
+		}
     }
 
     /**
@@ -214,7 +229,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInitStation(stationId, x, y, capacity, returnPrize);
         } catch (BadInitException e) {
-        	throwBadInit("Invalid initial parameters: " + e.getMessage());
+        	throwBadInit("BinasPortImpl: " + e.getMessage());
         }
         
     }
@@ -277,34 +292,52 @@ public class BinasPortImpl implements BinasPortType {
         throw new NoBinaAvail_Exception(message, faultInfo);
     }
 
-    //** Helper to throw a new BadInit exception. */
+    /** Helper to throw a new BadInit exception. */
     private void throwBadInit(final String message) throws BadInit_Exception {
         BadInit faultInfo = new BadInit();
         faultInfo.message = message;
         throw new BadInit_Exception(message, faultInfo);
     }
 
+    /** Helper to throw a new InvalidEmail exception. */
     private void throwInvalidEmail(String message) throws InvalidEmail_Exception {
     	InvalidEmail faultInfo = new InvalidEmail();
         faultInfo.message = message;
         throw new InvalidEmail_Exception(message, faultInfo);
 	}
 
+    /** Helper to throw a new InvalidStation exception. */
     private void throwInvalidStation(String message) throws InvalidStation_Exception {
     	InvalidStation faultInfo = new InvalidStation();
         faultInfo.message = message;
         throw new InvalidStation_Exception(message, faultInfo);
 	}
     
+    /** Helper to throw a new EmailExists exception. */
     private void throwEmailExists(String message) throws EmailExists_Exception {
     	EmailExists faultInfo = new EmailExists();
         faultInfo.message = message;
         throw new EmailExists_Exception(message, faultInfo);
 	}
     
+    /** Helper to throw a new UserNotExists exception. */
     private void throwUserNotExists(String message) throws UserNotExists_Exception {
 		UserNotExists faultInfo = new UserNotExists();
 		faultInfo.message = message;
 		throw new UserNotExists_Exception(message, faultInfo);	
+	}
+    
+    /** Helper to throw a new NoBinaRented exception. */
+    private void throwNoBinaRented(String message) throws NoBinaRented_Exception {
+		NoBinaRented faultInfo = new NoBinaRented();
+		faultInfo.message = message;
+		throw new NoBinaRented_Exception(message, faultInfo);	
+	}
+    
+    /** Helper to throw a new FullStation exception. */
+    private void throwFullStation(String message) throws FullStation_Exception {
+		FullStation faultInfo = new FullStation();
+		faultInfo.message = message;
+		throw new FullStation_Exception(message, faultInfo);	
 	}
 }
