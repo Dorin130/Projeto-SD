@@ -191,7 +191,8 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInit_Exception {
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+        bm.testInitStation(stationId, x, y, capacity, returnPrize);
     }
 
     /**
@@ -201,7 +202,8 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public void testInit(int userInitialPoints) throws BadInit_Exception {
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+    	bm.testInit(userInitialPoints);
     }
 
     // View helpers ----------------------------------------------------------

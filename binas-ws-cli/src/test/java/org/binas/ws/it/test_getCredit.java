@@ -1,0 +1,44 @@
+package org.binas.ws.it;
+
+import org.binas.ws.BadInit_Exception;
+import org.binas.ws.EmailExists_Exception;
+import org.binas.ws.InvalidEmail_Exception;
+import org.binas.ws.UserNotExists_Exception;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+
+/**
+ * Test suite
+ */
+public class test_getCredit extends BaseIT {
+    private static final String USER = "joãozinho1@tecnico.ulisboa.pt";
+    private static final int INITIAL_POINTS = 10;
+
+
+
+    @Before
+    public void setup() throws BadInit_Exception, EmailExists_Exception, InvalidEmail_Exception {
+        client.testInit(INITIAL_POINTS);
+        client.activateUser(USER);
+    }
+
+
+    @Test
+    public void getCreditSuccess() throws UserNotExists_Exception {
+        client.getCredit(USER);
+    }
+
+    @Test(expected=InvalidEmail_Exception.class)
+    public void getCreditNotExist() throws UserNotExists_Exception {
+        client.getCredit("0a368cd5c6e31694f79de59c2173fb5efa239601");
+    }
+
+
+    @After
+    public void after() {
+        client.testClear();
+    }
+
+}
