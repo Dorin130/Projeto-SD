@@ -66,15 +66,24 @@ public class BinasManager  {
 	//Obter informaçao feito no impl
 	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		//TODO invalid email address throw
-		if(hasEmail(emailAddress)) throw new EmailExistsException();
-
-		Matcher matcher = this.emailPattern.matcher(emailAddress);
-		if(!matcher.matches()) throw new InvalidEmailException();
+		checkEmail(emailAddress);
 
 		User newUser = new User(emailAddress, false, initialPoints);
 		users.put(emailAddress, newUser);
 		return newUser;
 		
+	}
+	private void checkEmail(String email) throws EmailExistsException, InvalidEmailException {
+
+		Matcher matcher = this.emailPattern.matcher(email);
+
+		if(email == null || email.trim().equals("") || !matcher.matches()) {
+			throw new InvalidEmailException();
+		}
+
+		if(hasEmail(email)) {
+			throw new EmailExistsException();
+		}
 	}
 	
 	public boolean hasEmail(String email) {

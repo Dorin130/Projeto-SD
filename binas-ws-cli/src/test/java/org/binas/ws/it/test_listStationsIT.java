@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class test_listStations extends BaseIT{
-    private static final String USER = "joãozinho@tecnico.ulisboa.pt";
+public class test_listStationsIT extends BaseIT{
+    private static final String USER = "joaozinho@tecnico.ulisboa.pt";
     private static final String S1 = "A17_TestStation1";
     private static final String S2 = "A17_TestStation2";
     private static final String S3 = "A17_TestStation3";

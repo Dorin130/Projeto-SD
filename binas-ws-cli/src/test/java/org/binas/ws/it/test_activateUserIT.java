@@ -11,8 +11,8 @@ import static junit.framework.TestCase.assertEquals;
 /**
  * Test suite
  */
-public class test_activateUser extends BaseIT {
-    private static final String USER = "joãozinho@tecnico.ulisboa.pt";
+public class test_activateUserIT extends BaseIT {
+    private static final String USER = "joaozinho@tecnico.ulisboa.pt";
     private static final int INITIAL_POINTS = 10;
 
 
