@@ -97,11 +97,7 @@ public class BinasManager  {
 
 	}
 	
-	public StationView getStationView(String stationId, String uddiURL) {
-		return null; //TODO
-	}
-	
-	private StationClient getStationClient(String stationId) {
+	public StationClient getStationClient(String stationId) {
 		StationClient stationClient = null;
 		try {
 			stationClient = new StationClient(uddiURL, stationId);
@@ -122,7 +118,7 @@ public class BinasManager  {
 			this.uddiURL = uddiURL;
 	}
 
-	// test mthods -------
+	// test methods -------
 
 	public void testInit(int userInitialPoints) throws BadInitException {
 		if(userInitialPoints >= 0) {
@@ -141,7 +137,7 @@ public class BinasManager  {
 		try {
 			station.testInit(x, y, capacity, returnPrize);
 		} catch (BadInit_Exception e) {
-			
+			throw new BadInitException("testInitStation: invalid parameters!");
 		}
 
 	}
