@@ -73,20 +73,54 @@ public class BinasManager  {
 	public boolean hasEmail(String email) {
 		return users.containsKey(email);
 	}
-	
-	public synchronized  void getBina(String stationId) {
-		//TODO
+	public User getUser(String email) {
+			return users.get(email);
 	}
 
-	public synchronized  void returnBina(String stationId) {
-		//TODO
+	public synchronized void getBina(String stationId, String userEmail)  throws AlreadyHasBinaException,
+			InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
+
+			if(!hasEmail(userEmail)) throw new UserNotExistsException();
+
+			StationClient stationClient = getStationClient(stationId);
+			if(stationClient == null) throw new InvalidStationException();
+
+			User user = getUser(userEmail);
+			if(user.getCredit() < 1) throw new NoCreditException();
+			if(user.hasBina()) throw  new AlreadyHasBinaException();
+
+			try {
+				stationClient.getBina();
+			} catch (NoBinaAvail_Exception e) {
+				throw new NoBinaAvailException("");
+			}
+			user.setHasBina(true);
+			user.setCredit(user.getCredit()-1);
+	}
+
+	public synchronized  void returnBina(String stationId, String userEmail)
+			throws FullStationException, InvalidStationException,NoBinaRentedException, UserNotExistsException {
+
+		if(!hasEmail(userEmail)) throw new UserNotExistsException();
+
+		User user = getUser(userEmail);
+		if(!user.hasBina()) throw new NoBinaRentedException();
+
+		StationClient stationClient = getStationClient(stationId);
+		if(stationClient == null) throw new InvalidStationException();
+
+		int bonus;
+		try {
+			bonus = stationClient.returnBina();
+		} catch (NoSlotAvail_Exception e) {
+			throw new FullStationException();
+		}
+
+		user.setHasBina(false);
+		user.setCredit(user.getCredit() + bonus);
 	}
 	
-	public StationView getStationView(String stationId, String uddiURL) {
-		return null; //TODO
-	}
-	
-	private StationClient getStationClient(String stationId) {
+	public StationClient getStationClient(String stationId) {
 		StationClient stationClient = null;
 		try {
 			stationClient = new StationClient(uddiURL, stationId);
@@ -107,7 +141,7 @@ public class BinasManager  {
 			this.uddiURL = uddiURL;
 	}
 
-	// test mthods -------
+	// test methods -------
 
 	public void testInit(int userInitialPoints) throws BadInitException {
 		if(userInitialPoints >= 0) {
@@ -126,7 +160,7 @@ public class BinasManager  {
 		try {
 			station.testInit(x, y, capacity, returnPrize);
 		} catch (BadInit_Exception e) {
-			
+			throw new BadInitException("testInitStation: invalid parameters!");
 		}
 
 	}

@@ -88,6 +88,12 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public StationView getInfoStation(String stationId) throws InvalidStation_Exception {
+    	BinasManager bm = BinasManager.getInstance();
+    	
+    	StationClient stationClient = bm.getStationClient(stationId);
+    	if(stationClient == null) {
+    		throwInvalidStation("The station with ID '" + stationId + "' could not be reached");
+    	}
     	
 		return null; //TODO
     }
@@ -134,7 +140,7 @@ public class BinasPortImpl implements BinasPortType {
     		throwInvalidEmail("This email is invalid");
     	}
     	return view;
-    } //TODO ask teacher about this method
+    }
 
 	/**
      * 
@@ -215,7 +221,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInitStation(stationId, x, y, capacity, returnPrize);
         } catch (BadInitException e) {
-        	throwBadInit("Invalid initial parameters.");
+        	throwBadInit("Invalid initial parameters: " + e.getMessage());
         }
         
     }
@@ -231,7 +237,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInit(userInitialPoints);
         } catch (BadInitException e) {
-        	throwBadInit("Invalid initial parameters: " + e.getMessage());
+        	throwBadInit("Invalid initial parameters:\n" + e.getMessage());
         }
     }
 
@@ -241,7 +247,7 @@ public class BinasPortImpl implements BinasPortType {
     private UserView buildUserView(User user) {
     	UserView userView = new UserView();
     	userView.setEmail(user.getEmail());
-    	userView.setHasBina(user.isHasBina());
+    	userView.setHasBina(user.HasBina());
     	userView.setCredit(user.getCredit());
         return userView;
     }
@@ -289,6 +295,12 @@ public class BinasPortImpl implements BinasPortType {
     	InvalidEmail faultInfo = new InvalidEmail();
         faultInfo.message = message;
         throw new InvalidEmail_Exception(message, faultInfo);
+	}
+
+    private void throwInvalidStation(String message) throws InvalidStation_Exception {
+    	InvalidStation faultInfo = new InvalidStation();
+        faultInfo.message = message;
+        throw new InvalidStation_Exception(message, faultInfo);
 	}
     
     private void throwEmailExists(String message) throws EmailExists_Exception {
