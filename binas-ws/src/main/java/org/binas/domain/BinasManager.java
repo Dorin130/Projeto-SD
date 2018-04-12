@@ -13,10 +13,15 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class BinasManager  {
-    private static final String wsName  = "A17_Station";
+	private static final String EMAIL_PATTERN =	"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+	private Pattern emailPattern;
+
+	private static final String wsName  = "A17_Station";
 
 	private static int initialPoints = 10;
     private Map<String, User> users = new HashMap<>();
@@ -24,6 +29,7 @@ public class BinasManager  {
 	
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
+		this.emailPattern = Pattern.compile(EMAIL_PATTERN); //used to validate user emails
 
 	}
 
@@ -59,11 +65,15 @@ public class BinasManager  {
 	public void setId(String wsName) {
 		// TODO Auto-generated method stub
 	}
-	
-	//Obter informaçao feito no impl
+
+
 	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		//TODO invalid email address throw
 		if(hasEmail(emailAddress)) throw new EmailExistsException();
+
+		Matcher matcher = this.emailPattern.matcher(emailAddress);
+		if(!matcher.matches()) throw new InvalidEmailException();
+
 		User newUser = new User(emailAddress, false, initialPoints);
 		users.put(emailAddress, newUser);
 		return newUser;
@@ -115,12 +125,11 @@ public class BinasManager  {
 		} catch (NoSlotAvail_Exception e) {
 			throw new FullStationException();
 		}
-		
+
 		user.setHasBina(false);
 		user.setCredit(user.getCredit() + bonus);
 	}
-	//ArrayList de station IDs
-	//Criar class Coordinates ou (adicionar dependencia no pom NAO)
+
 	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
         ArrayList<StationClient> stations = this.findActiveStations();
         stations.sort(new CoordinatesComparator(coordinates));
@@ -160,7 +169,7 @@ public class BinasManager  {
 			this.uddiURL = uddiURL;
 	}
 
-	// test mthods -------
+	// test methods -------
 
 	public void testInit(int userInitialPoints) throws BadInitException {
 		if(userInitialPoints >= 0) {
