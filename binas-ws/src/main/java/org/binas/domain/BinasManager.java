@@ -18,7 +18,7 @@ public class BinasManager  {
     private static final String wsName  = "A17_Station";
 
     private Map<String, User> users = new HashMap<>();
-	private String uddiURL = null; //TODO CHECK END OF DOCUMENT for info on this
+	private String uddiURL = null;
 	
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
@@ -81,9 +81,9 @@ public class BinasManager  {
 	}
 	//ArrayList de station IDs
 
-	//Criar class Coordinates ou adicionar dependencia no pom?
+	//Criar class Coordinates ou (adicionar dependencia no pom NAO)
 	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
-        ArrayList<StationClient> stations = this.findActiveStations(uddiURL);
+        ArrayList<StationClient> stations = this.findActiveStations();
         stations.sort(new CoordinatesComparator(coordinates));
         if(k > stations.size()) {
             return stations;
@@ -115,7 +115,6 @@ public class BinasManager  {
 		return users.get(userEmail).getCredit();
 	}
 
-	//TODO SO UGLY, CHANGE THIS, ASK TEACHER, DO ANYTHING BUT THIS
 	public void setUDDIurl(String uddiURL) {
 		if(this.uddiURL == null)
 			this.uddiURL = uddiURL;
