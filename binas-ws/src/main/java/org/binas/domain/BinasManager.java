@@ -7,7 +7,7 @@ import org.binas.domain.exception.UserNotExistsException;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
-import org.binas.station.ws.CoordinatesView;
+import org.binas.ws.CoordinatesView;
 import org.binas.ws.StationView;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
@@ -81,21 +81,6 @@ public class BinasManager  {
 	public synchronized  void returnBina(String stationId) {
 		//TODO
 	}
-	//ArrayList de station IDs
-	//Criar class Coordinates ou (adicionar dependencia no pom NAO)
-	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
-        ArrayList<StationClient> stations = this.findActiveStations();
-        stations.sort(new CoordinatesComparator(coordinates));
-        if(k > stations.size()) {
-            return stations;
-        }
-        for(int i=stations.size(); i > stations.size() - k; i--  ) {
-            stations.remove(i);
-        }
-        stations.trimToSize();
-        return stations;
-
-	}
 	
 	public StationView getStationView(String stationId, String uddiURL) {
 		return null; //TODO
@@ -145,5 +130,11 @@ public class BinasManager  {
 		}
 
 	}
+
+
+	public synchronized void testClear() {
+		users.clear();
+	}
+
 
 }

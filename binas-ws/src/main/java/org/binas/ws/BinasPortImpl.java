@@ -1,6 +1,7 @@
 package org.binas.ws;
 
 import org.binas.domain.BinasManager;
+import org.binas.domain.CoordinatesComparator;
 import org.binas.domain.User;
 
 import java.util.ArrayList;
@@ -57,7 +58,25 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
-		return null; //TODO
+        BinasManager bm = BinasManager.getInstance();
+        ArrayList<StationClient> stations = bm.findActiveStations();
+        ArrayList<StationView> stationViews = new ArrayList<>();
+
+        for(StationClient stationClient : stations) {
+            stationViews.add(buildStationView(stationClient));
+        }
+
+        stationViews.sort(new CoordinatesComparator(coordinates));
+
+        if(numberOfStations > stations.size()) {
+            return stationViews;
+        }
+        for(int i=numberOfStations; i < stations.size() ; i++  ) {
+            stations.remove(i);
+        }
+        stations.trimToSize();
+        return stationViews;
+
     }
 
     /**
@@ -177,7 +196,8 @@ public class BinasPortImpl implements BinasPortType {
 
     @Override
     public void testClear() {
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+        bm.testClear();
     }
 
     /**
@@ -224,6 +244,28 @@ public class BinasPortImpl implements BinasPortType {
     	userView.setHasBina(user.isHasBina());
     	userView.setCredit(user.getCredit());
         return userView;
+    }
+
+
+    public StationView buildStationView(StationClient stationClient) {
+        org.binas.station.ws.StationView svStation = stationClient.getInfo();
+        StationView svBinas = new StationView();
+
+        svBinas.setAvailableBinas(  svStation.getAvailableBinas());
+        svBinas.setCapacity(        svStation.getCapacity());
+
+        CoordinatesView cvBinas = new CoordinatesView();
+
+        cvBinas.setX(               svStation.getCoordinate().getX());
+        cvBinas.setY(               svStation.getCoordinate().getY());
+
+        svBinas.setCoordinate(      cvBinas);
+        svBinas.setFreeDocks(       svStation.getFreeDocks());
+        svBinas.setId(              svStation.getId());
+        svBinas.setTotalGets(       svStation.getTotalGets());
+        svBinas.setTotalReturns(    svBinas.getTotalReturns());
+
+        return svBinas;
     }
 
     // Exception helpers -----------------------------------------------------
