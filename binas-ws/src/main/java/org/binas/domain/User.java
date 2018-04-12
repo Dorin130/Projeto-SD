@@ -20,7 +20,7 @@ public class User {
         this.email = email;
     }
 
-    public boolean isHasBina() {
+    public boolean hasBina() {
         return hasBina;
     }
 

@@ -227,7 +227,7 @@ public class BinasPortImpl implements BinasPortType {
     private UserView buildUserView(User user) {
     	UserView userView = new UserView();
     	userView.setEmail(user.getEmail());
-    	userView.setHasBina(user.isHasBina());
+    	userView.setHasBina(user.HasBina());
     	userView.setCredit(user.getCredit());
         return userView;
     }
