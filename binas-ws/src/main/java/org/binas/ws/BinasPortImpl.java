@@ -207,7 +207,7 @@ public class BinasPortImpl implements BinasPortType {
     @Override
     public String testPing(String inputMessage) {
     	BinasManager bm = BinasManager.getInstance();
-    	ArrayList<StationClient> stationClients = bm.findActiveStations(); //station client here or station view? ask teacher
+    	ArrayList<StationClient> stationClients = bm.findActiveStations();
         
     	// Build a string with a message to return.
         StringBuilder builder = new StringBuilder();

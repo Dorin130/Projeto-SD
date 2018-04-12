@@ -80,16 +80,12 @@ public class BinasManager  {
 		
 	}
 	private void checkEmail(String email) throws EmailExistsException, InvalidEmailException {
-
+		if(email == null || email.trim().equals("")) throw new InvalidEmailException();
 		Matcher matcher = this.emailPattern.matcher(email);
+		
+		if(!matcher.matches()) throw new InvalidEmailException();
 
-		if(email == null || email.trim().equals("") || !matcher.matches()) {
-			throw new InvalidEmailException();
-		}
-
-		if(hasEmail(email)) {
-			throw new EmailExistsException();
-		}
+		if(hasEmail(email)) throw new EmailExistsException();
 	}
 	
 	public boolean hasEmail(String email) {
