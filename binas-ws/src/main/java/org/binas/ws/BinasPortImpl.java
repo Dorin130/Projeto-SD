@@ -260,7 +260,7 @@ public class BinasPortImpl implements BinasPortType {
         return userView;
     }
 
-
+    /** Helper to convert StationClient to a station view. */
     public StationView buildStationView(StationClient stationClient) {
         org.binas.station.ws.StationView svStation = stationClient.getInfo();
         StationView svBinas = new StationView();
