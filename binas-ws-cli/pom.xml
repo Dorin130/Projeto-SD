@@ -22,8 +22,10 @@
 
 		<mainclass>org.binas.ws.cli.BinasClientApp</mainclass>
 
+		<uddi.user>a17</uddi.user>
+		<uddi.pass>3VRki4z</uddi.pass>
+		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 		<group.id>A17</group.id>
-		<uddi.url>http://localhost:9090</uddi.url>
 		<ws.name>${group.id}_Binas</ws.name>
 		<supplier.ws.name>${group.id}_Binas</supplier.ws.name>
 		<ws.url>http://localhost:8080/binas-ws/endpoint</ws.url>

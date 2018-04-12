@@ -12,7 +12,6 @@ public class test_returnBinaIT extends BaseIT{
     private static final String S1 = "A17_TestStation1";
     private static final String S2 = "A17_TestStation2";
     private static final String S3 = "A17_TestStation3";
-    private static final String S_FULL = "A17_TestFullTest";
     private static final int INITIAL_POINTS = 10;
 
 
@@ -22,7 +21,6 @@ public class test_returnBinaIT extends BaseIT{
         client.testInitStation(S1,22, 7, 6, 2);
         client.testInitStation(S2,80, 20, 12, 1);
         client.testInitStation(S3,50, 50, 20, 0);
-        client.testInitStation(S_FULL,1, 1, 0, 0);
         client.activateUser(USER);
     }
 
@@ -43,7 +41,7 @@ public class test_returnBinaIT extends BaseIT{
     public void returnBinaFailFullStation() throws NoBinaAvail_Exception, NoCredit_Exception,
             InvalidStation_Exception, UserNotExists_Exception, FullStation_Exception, NoBinaRented_Exception, AlreadyHasBina_Exception {
         client.rentBina(S1, USER);
-        client.returnBina(S_FULL,USER);
+        client.returnBina(S2,USER);
         Assert.assertEquals(INITIAL_POINTS -1, client.getCredit(USER));
     }
 
