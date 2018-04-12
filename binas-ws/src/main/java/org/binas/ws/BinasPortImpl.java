@@ -16,6 +16,7 @@ import org.binas.domain.exception.InvalidEmailException;
 import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
+import org.binas.domain.exception.*;
 import org.binas.station.ws.cli.StationClient;
 
 /**
@@ -152,8 +153,31 @@ public class BinasPortImpl implements BinasPortType {
     public void rentBina(String stationId, String email)
         throws AlreadyHasBina_Exception, InvalidStation_Exception, NoBinaAvail_Exception,
         NoCredit_Exception, UserNotExists_Exception {
-    	
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+
+        try {
+            bm.getBina(stationId, email);
+
+        } catch (AlreadyHasBinaException e) {
+            e.printStackTrace();
+            throwAlreadyHasBina("TODO");
+
+        } catch (InvalidStationException e) {
+            e.printStackTrace();
+            throwInvalidStation("TODO");
+
+        } catch (NoBinaAvailException e) {
+            e.printStackTrace();
+            throwNoBinaAvail("TODO");
+
+        } catch (NoCreditException e) {
+            e.printStackTrace();
+            throwNoCredit("TODO");
+
+        } catch (UserNotExistsException e) {
+            e.printStackTrace();
+            throwUserNotExists("TODO");
+        }
     }
 
     /**
@@ -168,9 +192,9 @@ public class BinasPortImpl implements BinasPortType {
     @Override
     public void returnBina(String stationId, String email)
         throws FullStation_Exception, InvalidStation_Exception, NoBinaRented_Exception, UserNotExists_Exception {
-    	
+
     	BinasManager bm = BinasManager.getInstance();
-    	
+
     	try {
 			bm.returnBina(stationId, email);
 		} catch (FullStationException e) {
@@ -326,18 +350,30 @@ public class BinasPortImpl implements BinasPortType {
 		faultInfo.message = message;
 		throw new UserNotExists_Exception(message, faultInfo);	
 	}
-    
+
     /** Helper to throw a new NoBinaRented exception. */
     private void throwNoBinaRented(String message) throws NoBinaRented_Exception {
 		NoBinaRented faultInfo = new NoBinaRented();
 		faultInfo.message = message;
-		throw new NoBinaRented_Exception(message, faultInfo);	
+		throw new NoBinaRented_Exception(message, faultInfo);
 	}
-    
+
     /** Helper to throw a new FullStation exception. */
     private void throwFullStation(String message) throws FullStation_Exception {
 		FullStation faultInfo = new FullStation();
 		faultInfo.message = message;
-		throw new FullStation_Exception(message, faultInfo);	
+		throw new FullStation_Exception(message, faultInfo);
 	}
+
+    private void throwAlreadyHasBina(String message) throws AlreadyHasBina_Exception {
+        AlreadyHasBina faultInfo = new AlreadyHasBina();
+        faultInfo.message = message;
+        throw new AlreadyHasBina_Exception(message, faultInfo);
+    }
+
+    private void throwNoCredit(String message) throws NoCredit_Exception {
+        NoCredit faultInfo = new NoCredit();
+        faultInfo.message = message;
+        throw new NoCredit_Exception(message, faultInfo);
+    }
 }

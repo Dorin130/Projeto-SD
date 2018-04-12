@@ -18,11 +18,11 @@ public class BinasManager  {
 	private static final String EMAIL_PATTERN =	"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 	private Pattern emailPattern;
 
-	private static final String wsName  = "A17_Station";
+	private static String wsName  = null;
+	private static String uddiURL = null;
 
 	private static int initialPoints = 10;
     private Map<String, User> users = new HashMap<>();
-	private String uddiURL = null;
 	
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
@@ -60,21 +60,36 @@ public class BinasManager  {
 	}
 
 	public void setId(String wsName) {
-		// TODO Auto-generated method stub
+		if(this.wsName == null)
+			this.wsName = wsName;
 	}
-	
+
+	public void setUDDIurl(String uddiURL) {
+		if(this.uddiURL == null)
+			this.uddiURL = uddiURL;
+	}
+
 	//Obter informaçao feito no impl
 	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		//TODO invalid email address throw
-		if(hasEmail(emailAddress)) throw new EmailExistsException();
-
-		Matcher matcher = this.emailPattern.matcher(emailAddress);
-		if(!matcher.matches()) throw new InvalidEmailException();
+		checkEmail(emailAddress);
 
 		User newUser = new User(emailAddress, false, initialPoints);
 		users.put(emailAddress, newUser);
 		return newUser;
 		
+	}
+	private void checkEmail(String email) throws EmailExistsException, InvalidEmailException {
+
+		Matcher matcher = this.emailPattern.matcher(email);
+
+		if(email == null || email.trim().equals("") || !matcher.matches()) {
+			throw new InvalidEmailException();
+		}
+
+		if(hasEmail(email)) {
+			throw new EmailExistsException();
+		}
 	}
 	
 	public boolean hasEmail(String email) {
@@ -143,11 +158,6 @@ public class BinasManager  {
 		return users.get(userEmail).getCredit();
 	}
 
-	public void setUDDIurl(String uddiURL) {
-		if(this.uddiURL == null)
-			this.uddiURL = uddiURL;
-	}
-
 	// test methods -------
 
 	public void testInit(int userInitialPoints) throws BadInitException {
@@ -173,8 +183,10 @@ public class BinasManager  {
 	}
 
 
-	public synchronized void testClear() {
-		users.clear();
+	public void testClear() {
+		synchronized (users) {
+		    users.clear();
+        }
 	}
 
 }

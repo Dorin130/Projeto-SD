@@ -12,8 +12,8 @@ import org.junit.Test;
 /**
  * Test suite
  */
-public class test_getCredit extends BaseIT {
-    private static final String USER = "joãozinho1@tecnico.ulisboa.pt";
+public class test_getCreditIT extends BaseIT {
+    private static final String USER = "joaozinho1@tecnico.ulisboa.pt";
     private static final int INITIAL_POINTS = 10;
 
 

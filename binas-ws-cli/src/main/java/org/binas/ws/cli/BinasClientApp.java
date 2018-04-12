@@ -1,5 +1,7 @@
 package org.binas.ws.cli;
 
+import org.binas.ws.UserView;
+
 public class BinasClientApp {
 
     public static void main(String[] args) throws Exception {
@@ -40,6 +42,18 @@ public class BinasClientApp {
 		System.out.println("Invoke ping()...");
 		String result = client.testPing("client");
 		System.out.print(result);
+
+        System.out.println("Invoke testClear()");
+        client.testClear();
+        System.out.println(client.getCredit("meme@big.boi"));
+
+		System.out.println("Invoke activateUser()");
+		UserView user = client.activateUser("meme@big.boi");
+		System.out.println(user.getEmail());
+
+        System.out.println("Invoke testClear()");
+        client.testClear();
+        System.out.println(client.getCredit("meme@big.boi"));
         
 	 }
 }

@@ -12,7 +12,7 @@ import static junit.framework.TestCase.assertNotNull;
  * Test suite
  */
 public class test_getBinaIT extends BaseIT {
-    private static final String USER = "joãozinho@tecnico.ulisboa.pt";
+    private static final String USER = "joaozinho@tecnico.ulisboa.pt";
     private static final String S1 = "A17_Station1";
     private static final String S2 = "A17_Station2";
     private static final String S3 = "A17_Station3";
