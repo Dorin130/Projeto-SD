@@ -7,14 +7,7 @@ import org.binas.domain.User;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jws.WebMethod;
-import javax.jws.WebParam;
-import javax.jws.WebResult;
 import javax.jws.WebService;
-import javax.xml.ws.Action;
-import javax.xml.ws.FaultAction;
-import javax.xml.ws.RequestWrapper;
-import javax.xml.ws.ResponseWrapper;
 
 import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
@@ -247,7 +240,7 @@ public class BinasPortImpl implements BinasPortType {
     private UserView buildUserView(User user) {
     	UserView userView = new UserView();
     	userView.setEmail(user.getEmail());
-    	userView.setHasBina(user.HasBina());
+    	userView.setHasBina(user.hasBina());
     	userView.setCredit(user.getCredit());
         return userView;
     }

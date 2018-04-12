@@ -1,14 +1,11 @@
 package org.binas.domain;
 
-import org.binas.domain.exception.BadInitException;
-import org.binas.domain.exception.EmailExistsException;
-import org.binas.domain.exception.InvalidEmailException;
-import org.binas.domain.exception.UserNotExistsException;
+import org.binas.domain.exception.*;
+import org.binas.station.ws.NoSlotAvail_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
-import org.binas.ws.CoordinatesView;
-import org.binas.ws.StationView;
+import org.binas.station.ws.NoBinaAvail_Exception;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
@@ -94,7 +91,7 @@ public class BinasManager  {
 			} catch (NoBinaAvail_Exception e) {
 				throw new NoBinaAvailException("");
 			}
-			user.setHasBina(true);
+        user.setHasBina(true);
 			user.setCredit(user.getCredit()-1);
 	}
 
