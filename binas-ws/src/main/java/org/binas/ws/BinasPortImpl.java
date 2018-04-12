@@ -195,7 +195,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInitStation(stationId, x, y, capacity, returnPrize);
         } catch (BadInitException e) {
-        	
+        	throwBadInit("Invalid initial parameters.");
         }
         
     }
@@ -208,7 +208,11 @@ public class BinasPortImpl implements BinasPortType {
     @Override
     public void testInit(int userInitialPoints) throws BadInit_Exception {
         BinasManager bm = BinasManager.getInstance();
-    	bm.testInit(userInitialPoints);
+        try {
+        	bm.testInit(userInitialPoints);
+        } catch (BadInitException e) {
+        	throwBadInit("Invalid initial parameters: " + e.getMessage());
+        }
     }
 
     // View helpers ----------------------------------------------------------

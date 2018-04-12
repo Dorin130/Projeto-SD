@@ -4,6 +4,7 @@ import org.binas.domain.exception.*;
 import org.binas.station.ws.NoBinaAvail_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
+import org.binas.station.ws.BadInit_Exception;
 import org.binas.station.ws.CoordinatesView;
 import org.binas.ws.StationView;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
@@ -32,7 +33,7 @@ public class BinasManager  {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
 
-	public synchronized ArrayList<StationClient> findActiveStations(/*String uddiURL*/) {
+	public synchronized ArrayList<StationClient> findActiveStations() {
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
 		UDDINaming uddiNaming;
 		try {
@@ -42,9 +43,9 @@ public class BinasManager  {
 				activeStationClients.add(new StationClient(wsURL));
 			}
 		} catch (UDDINamingException e) {
-			e.printStackTrace();
+			System.err.println("findActiveStations: UDDINaming Error");
 		} catch (StationClientException e) {
-			e.printStackTrace();
+			System.err.println("findActiveStations: error creating station client");
 		}
         return activeStationClients;
 	}
@@ -116,7 +117,8 @@ public class BinasManager  {
 		try {
 			stationClient = new StationClient(uddiURL, stationId);
 		} catch (StationClientException e) {
-			e.printStackTrace();
+			System.err.println("Error initializing station client.");
+			System.err.println("Included message: " + e.getMessage());
 		}
         return stationClient;
 	}
@@ -133,14 +135,25 @@ public class BinasManager  {
 
 	// test mthods -------
 
-	public void testInit(int userInitialPoints) {
-		initialPoints = userInitialPoints;
+	public void testInit(int userInitialPoints) throws BadInitException {
+		if(userInitialPoints >= 0) {
+			initialPoints = userInitialPoints;
+		} else {
+			throw new BadInitException("initial points must be non negative");
+		}
 	}
 
 
 	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInitException {
 		StationClient station = getStationClient(stationId);
-		//station.testInit(x, y, capacity, returnPrize);
+		if(station == null) {
+			throw new BadInitException("testInitStation: station could not be reached");
+		}
+		try {
+			station.testInit(x, y, capacity, returnPrize);
+		} catch (BadInit_Exception e) {
+			
+		}
 
 	}
 
