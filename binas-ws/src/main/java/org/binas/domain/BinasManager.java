@@ -1,9 +1,7 @@
 package org.binas.domain;
 
-import org.binas.domain.exception.BadInitException;
-import org.binas.domain.exception.EmailExistsException;
-import org.binas.domain.exception.InvalidEmailException;
-import org.binas.domain.exception.UserNotExistsException;
+import org.binas.domain.exception.*;
+import org.binas.station.ws.NoBinaAvail_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.CoordinatesView;
@@ -72,12 +70,25 @@ public class BinasManager  {
 	public boolean hasEmail(String email) {
 		return users.containsKey(email);
 	}
-	
-	public synchronized  void getBina(String stationId) {
-		//TODO
+	public User getUser(String email) {
+			return users.get(email);
 	}
 
-	public synchronized  void returnBina(String stationId) {
+	public synchronized void getBina(String stationId, String userEmail) throws UserNotExistsException {
+			if(!hasEmail(userEmail)) throw new UserNotExistsException();
+			StationClient stationClient = getStationClient(stationId);
+			//if(stationClient == null) throw InvalidStationException;
+			User user = getUser(userEmail);
+			if(user.getCredit() >= 1 && !user.hasBina()) {
+				try {
+					stationClient.getBina();
+				} catch (NoBinaAvail_Exception e) {
+					e.printStackTrace();
+				}
+			}
+	}
+
+	public synchronized  void returnBina(String stationId, String userEmail) {
 		//TODO
 	}
 	//ArrayList de station IDs
