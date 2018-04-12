@@ -3,6 +3,7 @@ package org.binas.domain;
 import org.binas.domain.exception.EmailExistsException;
 import org.binas.domain.exception.InvalidEmailException;
 import org.binas.domain.exception.UserNotExistsException;
+import org.binas.station.ws.BadInit_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.CoordinatesView;
@@ -14,9 +15,9 @@ import java.util.*;
 
 
 public class BinasManager  {
-    private static final int INITIAL_CREDIT = 10;
     private static final String wsName  = "A17_Station";
 
+	private static int initialPoints = 10;
     private Map<String, User> users = new HashMap<>();
 	private String uddiURL = null; //TODO CHECK END OF DOCUMENT for info on this
 	
@@ -24,6 +25,8 @@ public class BinasManager  {
 	private BinasManager() {
 
 	}
+
+
 
 	/**
 	 * SingletonHolder is loaded on the first execution of Singleton.getInstance()
@@ -34,7 +37,7 @@ public class BinasManager  {
 	}
 
 	public synchronized ArrayList<StationClient> findActiveStations(/*String uddiURL*/) {
-		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>(0);
+		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
 		UDDINaming uddiNaming;
 		try {
 			uddiNaming = new UDDINaming(uddiURL);
@@ -62,7 +65,7 @@ public class BinasManager  {
 	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		//TODO invalid email address throw
 		if(hasEmail(emailAddress)) throw new EmailExistsException();
-		User newUser = new User(emailAddress, false, INITIAL_CREDIT);
+		User newUser = new User(emailAddress, false, initialPoints);
 		users.put(emailAddress, newUser);
 		return newUser;
 		
@@ -82,8 +85,8 @@ public class BinasManager  {
 	//ArrayList de station IDs
 
 	//Criar class Coordinates ou adicionar dependencia no pom?
-	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
-        ArrayList<StationClient> stations = this.findActiveStations(uddiURL);
+	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates) {
+        ArrayList<StationClient> stations = this.findActiveStations();
         stations.sort(new CoordinatesComparator(coordinates));
         if(k > stations.size()) {
             return stations;
@@ -96,14 +99,14 @@ public class BinasManager  {
 
 	}
 	
-	public StationView getStationView(int stationId, String uddiURL) {
+	public StationView getStationView(String stationId, String uddiURL) {
 		return null; //TODO
 	}
 	
-	private StationClient getStationClient(int stationId) {
+	private StationClient getStationClient(String stationId) {
 		StationClient stationClient = null;
 		try {
-			stationClient = new StationClient(uddiURL, Integer.toString(stationId));
+			stationClient = new StationClient(uddiURL, stationId);
 		} catch (StationClientException e) {
 			e.printStackTrace();
 		}
@@ -120,4 +123,18 @@ public class BinasManager  {
 		if(this.uddiURL == null)
 			this.uddiURL = uddiURL;
 	}
+
+	// test mthods -------
+
+	public void testInit(int userInitialPoints) {
+		initialPoints = userInitialPoints;
+	}
+
+
+	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInit_Exception {
+		StationClient station = getStationClient(stationId);
+		station.testInit(x, y, capacity, returnPrize);
+
+	}
+
 }
