@@ -13,14 +13,9 @@ import org.junit.Test;
  * Test suite
  */
 public class test_getCreditIT extends BaseIT {
-    private static final String USER = "joaozinho1@tecnico.ulisboa.pt";
-    private static final int INITIAL_POINTS = 10;
-
-
 
     @Before
-    public void setup() throws BadInit_Exception, EmailExists_Exception, InvalidEmail_Exception {
-        client.testInit(INITIAL_POINTS);
+    public void setup() throws EmailExists_Exception, InvalidEmail_Exception {
         client.activateUser(USER);
     }
 
@@ -30,7 +25,7 @@ public class test_getCreditIT extends BaseIT {
         client.getCredit(USER);
     }
 
-    @Test(expected=InvalidEmail_Exception.class)
+    @Test(expected=UserNotExists_Exception.class)
     public void getCreditNotExist() throws UserNotExists_Exception {
         client.getCredit("0a368cd5c6e31694f79de59c2173fb5efa239601");
     }

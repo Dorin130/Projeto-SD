@@ -2,27 +2,13 @@ package org.binas.ws.it;
 
 import org.binas.ws.*;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-
-import static junit.framework.TestCase.assertEquals;
 
 
 /**
  * Test suite
  */
 public class test_activateUserIT extends BaseIT {
-    private static final String USER = "joaozinho@tecnico.ulisboa.pt";
-    private static final int INITIAL_POINTS = 10;
-
-
-
-    @Before
-    public void setup() throws BadInit_Exception{
-        client.testInit(INITIAL_POINTS);
-    }
-
-
     @Test
     public void activateUserSuccess() throws EmailExists_Exception, InvalidEmail_Exception {
         client.activateUser(USER);

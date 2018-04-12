@@ -62,10 +62,6 @@ public class Station {
  	
 	public synchronized void reset() {
  		freeDocks.set(0);
- 		maxCapacity = DEFAULT_MAX_CAPACITY;
- 		bonus = DEFAULT_BONUS;
-		coordinates = DEFAULT_COORDINATES;
- 		
 		totalGets.set(0);
 		totalReturns.set(0);
 	}

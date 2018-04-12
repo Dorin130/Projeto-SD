@@ -2,6 +2,7 @@ package org.binas.domain;
 
 import org.binas.domain.exception.*;
 import org.binas.station.ws.NoSlotAvail_Exception;
+import org.binas.station.ws.StationView;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
@@ -55,6 +56,22 @@ public class BinasManager  {
         return activeStationClients;
 	}
 
+	public synchronized StationClient lookupStation(String stationID) {
+		StationClient stationClient = null;
+		UDDINaming uddiNaming;
+		try {
+			uddiNaming = new UDDINaming(uddiURL);
+			String wsURL = uddiNaming.lookup(stationID);
+			if(wsURL == null) return null;
+			stationClient = new StationClient(wsURL);
+		} catch (UDDINamingException e) {
+			System.err.println("findActiveStations: UDDINaming Error");
+		} catch (StationClientException e) {
+			System.err.println("findActiveStations: error creating station client");
+		}
+		return stationClient;
+	}
+
 	public static synchronized BinasManager getInstance() {
 		return SingletonHolder.INSTANCE;
 	}
@@ -100,7 +117,7 @@ public class BinasManager  {
 
 			if(!hasEmail(userEmail)) throw new UserNotExistsException();
 
-			StationClient stationClient = getStationClient(stationId);
+			StationClient stationClient = lookupStation(stationId);
 			if(stationClient == null) throw new InvalidStationException();
 
 			User user = getUser(userEmail);
@@ -124,7 +141,7 @@ public class BinasManager  {
 		User user = getUser(userEmail);
 		if(!user.hasBina()) throw new NoBinaRentedException();
 
-		StationClient stationClient = getStationClient(stationId);
+		StationClient stationClient = lookupStation(stationId);
 		if(stationClient == null) throw new InvalidStationException();
 
 		int bonus;
@@ -137,17 +154,7 @@ public class BinasManager  {
 		user.setHasBina(false);
 		user.setCredit(user.getCredit() + bonus);
 	}
-	
-	public StationClient getStationClient(String stationId) {
-		StationClient stationClient = null;
-		try {
-			stationClient = new StationClient(uddiURL, stationId);
-		} catch (StationClientException e) {
-			System.err.println("Error initializing station client.");
-			System.err.println("Included message: " + e.getMessage());
-		}
-        return stationClient;
-	}
+
 
 	public synchronized int getCredit(String userEmail) throws UserNotExistsException {
 		if(!hasEmail(userEmail)) throw new UserNotExistsException();
@@ -166,12 +173,13 @@ public class BinasManager  {
 
 
 	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInitException {
-		StationClient station = getStationClient(stationId);
+		StationClient station = lookupStation(stationId);
 		if(station == null) {
 			throw new BadInitException("testInitStation: station could not be reached");
 		}
 		try {
 			station.testInit(x, y, capacity, returnPrize);
+			station.testClear();
 		} catch (BadInit_Exception e) {
 			throw new BadInitException("testInitStation: invalid parameters!");
 		}
@@ -183,6 +191,9 @@ public class BinasManager  {
 		synchronized (users) {
 		    users.clear();
         }
+        for (StationClient stationClient: findActiveStations()) {
+			stationClient.testClear();
+		}
 	}
 
 }

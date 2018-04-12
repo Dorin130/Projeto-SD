@@ -86,8 +86,12 @@ public class BinasPortImpl implements BinasPortType {
     @Override
     public StationView getInfoStation(String stationId) throws InvalidStation_Exception {
     	BinasManager bm = BinasManager.getInstance();
-    	
-    	StationClient stationClient = bm.getStationClient(stationId);
+
+    	if (stationId == null || stationId.trim().equals("")) {
+            throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
+        }
+
+    	StationClient stationClient = bm.lookupStation(stationId);
     	if(stationClient == null) {
     		throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
     	}
@@ -262,6 +266,7 @@ public class BinasPortImpl implements BinasPortType {
         	throwBadInit("Invalid initial parameters:\n" + e.getMessage());
         }
     }
+
 
     // View helpers ----------------------------------------------------------
 
