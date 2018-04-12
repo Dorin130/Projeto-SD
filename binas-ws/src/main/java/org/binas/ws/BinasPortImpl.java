@@ -1,19 +1,13 @@
 package org.binas.ws;
 
 import org.binas.domain.BinasManager;
+import org.binas.domain.CoordinatesComparator;
 import org.binas.domain.User;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jws.WebMethod;
-import javax.jws.WebParam;
-import javax.jws.WebResult;
 import javax.jws.WebService;
-import javax.xml.ws.Action;
-import javax.xml.ws.FaultAction;
-import javax.xml.ws.RequestWrapper;
-import javax.xml.ws.ResponseWrapper;
 
 import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
@@ -57,7 +51,25 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
-		return null; //TODO
+        BinasManager bm = BinasManager.getInstance();
+        ArrayList<StationClient> stations = bm.findActiveStations();
+        ArrayList<StationView> stationViews = new ArrayList<>();
+
+        for(StationClient stationClient : stations) {
+            stationViews.add(buildStationView(stationClient));
+        }
+
+        stationViews.sort(new CoordinatesComparator(coordinates));
+
+        if(numberOfStations > stations.size()) {
+            return stationViews;
+        }
+        for(int i=numberOfStations; i < stations.size() ; i++  ) {
+            stations.remove(i);
+        }
+        stations.trimToSize();
+        return stationViews;
+
     }
 
     /**
@@ -69,6 +81,12 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public StationView getInfoStation(String stationId) throws InvalidStation_Exception {
+    	BinasManager bm = BinasManager.getInstance();
+    	
+    	StationClient stationClient = bm.getStationClient(stationId);
+    	if(stationClient == null) {
+    		throwInvalidStation("The station with ID '" + stationId + "' could not be reached");
+    	}
     	
 		return null; //TODO
     }
@@ -115,7 +133,7 @@ public class BinasPortImpl implements BinasPortType {
     		throwInvalidEmail("This email is invalid");
     	}
     	return view;
-    } //TODO ask teacher about this method
+    }
 
 	/**
      * 
@@ -177,7 +195,8 @@ public class BinasPortImpl implements BinasPortType {
 
     @Override
     public void testClear() {
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+        bm.testClear();
     }
 
     /**
@@ -195,7 +214,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInitStation(stationId, x, y, capacity, returnPrize);
         } catch (BadInitException e) {
-        	throwBadInit("Invalid initial parameters.");
+        	throwBadInit("Invalid initial parameters: " + e.getMessage());
         }
         
     }
@@ -211,7 +230,7 @@ public class BinasPortImpl implements BinasPortType {
         try {
         	bm.testInit(userInitialPoints);
         } catch (BadInitException e) {
-        	throwBadInit("Invalid initial parameters: " + e.getMessage());
+        	throwBadInit("Invalid initial parameters:\n" + e.getMessage());
         }
     }
 
@@ -224,6 +243,28 @@ public class BinasPortImpl implements BinasPortType {
     	userView.setHasBina(user.hasBina());
     	userView.setCredit(user.getCredit());
         return userView;
+    }
+
+
+    public StationView buildStationView(StationClient stationClient) {
+        org.binas.station.ws.StationView svStation = stationClient.getInfo();
+        StationView svBinas = new StationView();
+
+        svBinas.setAvailableBinas(  svStation.getAvailableBinas());
+        svBinas.setCapacity(        svStation.getCapacity());
+
+        CoordinatesView cvBinas = new CoordinatesView();
+
+        cvBinas.setX(               svStation.getCoordinate().getX());
+        cvBinas.setY(               svStation.getCoordinate().getY());
+
+        svBinas.setCoordinate(      cvBinas);
+        svBinas.setFreeDocks(       svStation.getFreeDocks());
+        svBinas.setId(              svStation.getId());
+        svBinas.setTotalGets(       svStation.getTotalGets());
+        svBinas.setTotalReturns(    svBinas.getTotalReturns());
+
+        return svBinas;
     }
 
     // Exception helpers -----------------------------------------------------
@@ -247,6 +288,12 @@ public class BinasPortImpl implements BinasPortType {
     	InvalidEmail faultInfo = new InvalidEmail();
         faultInfo.message = message;
         throw new InvalidEmail_Exception(message, faultInfo);
+	}
+
+    private void throwInvalidStation(String message) throws InvalidStation_Exception {
+    	InvalidStation faultInfo = new InvalidStation();
+        faultInfo.message = message;
+        throw new InvalidStation_Exception(message, faultInfo);
 	}
     
     private void throwEmailExists(String message) throws EmailExists_Exception {

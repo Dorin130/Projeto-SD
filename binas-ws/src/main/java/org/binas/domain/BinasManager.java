@@ -1,14 +1,11 @@
 package org.binas.domain;
 
 import org.binas.domain.exception.*;
-import org.binas.station.ws.NoBinaAvail_Exception;
 import org.binas.station.ws.NoSlotAvail_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
-import org.binas.station.ws.CoordinatesView;
-import org.binas.ws.FullStation_Exception;
-import org.binas.ws.StationView;
+import org.binas.station.ws.NoBinaAvail_Exception;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
@@ -65,8 +62,8 @@ public class BinasManager  {
 	public void setId(String wsName) {
 		// TODO Auto-generated method stub
 	}
-
-
+	
+	//Obter informaçao feito no impl
 	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		//TODO invalid email address throw
 		if(hasEmail(emailAddress)) throw new EmailExistsException();
@@ -125,30 +122,12 @@ public class BinasManager  {
 		} catch (NoSlotAvail_Exception e) {
 			throw new FullStationException();
 		}
-
+		
 		user.setHasBina(false);
 		user.setCredit(user.getCredit() + bonus);
 	}
-
-	public synchronized ArrayList<StationClient> listStations(int k, CoordinatesView coordinates, String uddiURL) {
-        ArrayList<StationClient> stations = this.findActiveStations();
-        stations.sort(new CoordinatesComparator(coordinates));
-        if(k > stations.size()) {
-            return stations;
-        }
-        for(int i=stations.size(); i > stations.size() - k; i--  ) {
-            stations.remove(i);
-        }
-        stations.trimToSize();
-        return stations;
-
-	}
 	
-	public StationView getStationView(String stationId, String uddiURL) {
-		return null; //TODO
-	}
-	
-	private StationClient getStationClient(String stationId) {
+	public StationClient getStationClient(String stationId) {
 		StationClient stationClient = null;
 		try {
 			stationClient = new StationClient(uddiURL, stationId);
@@ -188,9 +167,14 @@ public class BinasManager  {
 		try {
 			station.testInit(x, y, capacity, returnPrize);
 		} catch (BadInit_Exception e) {
-			
+			throw new BadInitException("testInitStation: invalid parameters!");
 		}
 
+	}
+
+
+	public synchronized void testClear() {
+		users.clear();
 	}
 
 }
