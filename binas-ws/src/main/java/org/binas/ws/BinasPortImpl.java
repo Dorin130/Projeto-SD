@@ -9,10 +9,7 @@ import java.util.List;
 
 import javax.jws.WebService;
 
-import org.binas.domain.exception.BadInitException;
-import org.binas.domain.exception.EmailExistsException;
-import org.binas.domain.exception.InvalidEmailException;
-import org.binas.domain.exception.UserNotExistsException;
+import org.binas.domain.exception.*;
 import org.binas.station.ws.cli.StationClient;
 
 /**
@@ -149,8 +146,31 @@ public class BinasPortImpl implements BinasPortType {
     public void rentBina(String stationId, String email)
         throws AlreadyHasBina_Exception, InvalidStation_Exception, NoBinaAvail_Exception,
         NoCredit_Exception, UserNotExists_Exception {
-    	
-    	//TODO
+        BinasManager bm = BinasManager.getInstance();
+
+        try {
+            bm.getBina(stationId, email);
+            
+        } catch (AlreadyHasBinaException e) {
+            e.printStackTrace();
+            throwAlreadyHasBina("TODO");
+
+        } catch (InvalidStationException e) {
+            e.printStackTrace();
+            throwInvalidStation("TODO");
+
+        } catch (NoBinaAvailException e) {
+            e.printStackTrace();
+            throwNoBinaAvail("TODO");
+
+        } catch (NoCreditException e) {
+            e.printStackTrace();
+            throwNoCredit("TODO");
+
+        } catch (UserNotExistsException e) {
+            e.printStackTrace();
+            throwUserNotExists("TODO");
+        }
     }
 
     /**
@@ -307,4 +327,16 @@ public class BinasPortImpl implements BinasPortType {
 		faultInfo.message = message;
 		throw new UserNotExists_Exception(message, faultInfo);	
 	}
+
+    private void throwAlreadyHasBina(String message) throws AlreadyHasBina_Exception {
+        AlreadyHasBina faultInfo = new AlreadyHasBina();
+        faultInfo.message = message;
+        throw new AlreadyHasBina_Exception(message, faultInfo);
+    }
+
+    private void throwNoCredit(String message) throws NoCredit_Exception {
+        NoCredit faultInfo = new NoCredit();
+        faultInfo.message = message;
+        throw new NoCredit_Exception(message, faultInfo);
+    }
 }
