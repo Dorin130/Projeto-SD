@@ -157,26 +157,16 @@ public class BinasPortImpl implements BinasPortType {
 
         try {
             bm.getBina(stationId, email);
-
         } catch (AlreadyHasBinaException e) {
-            e.printStackTrace();
-            throwAlreadyHasBina("TODO");
-
+            throwAlreadyHasBina("The user with email '" + email + "' is already renting a bina");
         } catch (InvalidStationException e) {
-            e.printStackTrace();
-            throwInvalidStation("TODO");
-
+            throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
         } catch (NoBinaAvailException e) {
-            e.printStackTrace();
-            throwNoBinaAvail("TODO");
-
+            throwNoBinaAvail("The station with ID '" + stationId + "' has no bina available (full)");
         } catch (NoCreditException e) {
-            e.printStackTrace();
-            throwNoCredit("TODO");
-
+            throwNoCredit("The user with email '" + email + "' does not have enough credit to rent a bina");
         } catch (UserNotExistsException e) {
-            e.printStackTrace();
-            throwUserNotExists("TODO");
+            throwUserNotExists("There is no user with email '" + email + "'.");
         }
     }
 
@@ -202,7 +192,7 @@ public class BinasPortImpl implements BinasPortType {
 		} catch (InvalidStationException e) {
     		throwInvalidStation("The station with ID '" + stationId + "' does not exist or could not be reached");
 		} catch (NoBinaRentedException e) {
-			throwNoBinaRented("The user with email '" + email + "' was not renting a bina");
+			throwNoBinaRented("The user with email '" + email + "' is not renting a bina");
 		} catch (UserNotExistsException e) {
 			throwUserNotExists("There is no user with email '" + email + "'.");
 		}
