@@ -2,10 +2,12 @@ package org.binas.domain;
 
 import org.binas.domain.exception.*;
 import org.binas.station.ws.NoBinaAvail_Exception;
+import org.binas.station.ws.NoSlotAvail_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
 import org.binas.station.ws.CoordinatesView;
+import org.binas.ws.FullStation_Exception;
 import org.binas.ws.StationView;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
@@ -75,22 +77,47 @@ public class BinasManager  {
 			return users.get(email);
 	}
 
-	public synchronized void getBina(String stationId, String userEmail) throws UserNotExistsException {
+	public synchronized void getBina(String stationId, String userEmail)  throws AlreadyHasBinaException,
+			InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
+
 			if(!hasEmail(userEmail)) throw new UserNotExistsException();
+
 			StationClient stationClient = getStationClient(stationId);
-			//if(stationClient == null) throw InvalidStationException;
+			if(stationClient == null) throw new InvalidStationException();
+
 			User user = getUser(userEmail);
-			if(user.getCredit() >= 1 && !user.hasBina()) {
-				try {
-					stationClient.getBina();
-				} catch (NoBinaAvail_Exception e) {
-					e.printStackTrace();
-				}
+			if(user.getCredit() < 1) throw new NoCreditException();
+			if(user.hasBina()) throw  new AlreadyHasBinaException();
+
+			try {
+				stationClient.getBina();
+			} catch (NoBinaAvail_Exception e) {
+				throw new NoBinaAvailException("");
 			}
+			user.setHasBina(true);
+			user.setCredit(user.getCredit()-1);
 	}
 
-	public synchronized  void returnBina(String stationId, String userEmail) {
-		//TODO
+	public synchronized  void returnBina(String stationId, String userEmail)
+			throws FullStationException, InvalidStationException,NoBinaRentedException, UserNotExistsException {
+
+		if(!hasEmail(userEmail)) throw new UserNotExistsException();
+
+		User user = getUser(userEmail);
+		if(!user.hasBina()) throw new NoBinaRentedException();
+
+		StationClient stationClient = getStationClient(stationId);
+		if(stationClient == null) throw new InvalidStationException();
+
+		int bonus;
+		try {
+			bonus = stationClient.returnBina();
+		} catch (NoSlotAvail_Exception e) {
+			throw new FullStationException();
+		}
+		
+		user.setHasBina(false);
+		user.setCredit(user.getCredit() + bonus);
 	}
 	//ArrayList de station IDs
 	//Criar class Coordinates ou (adicionar dependencia no pom NAO)
