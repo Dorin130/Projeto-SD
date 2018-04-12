@@ -1,9 +1,9 @@
 package org.binas.domain;
 
+import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
 import org.binas.domain.exception.InvalidEmailException;
 import org.binas.domain.exception.UserNotExistsException;
-import org.binas.station.ws.BadInit_Exception;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.CoordinatesView;
@@ -127,9 +127,9 @@ public class BinasManager  {
 	}
 
 
-	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInit_Exception {
+	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInitException {
 		StationClient station = getStationClient(stationId);
-		station.testInit(x, y, capacity, returnPrize);
+		//station.testInit(x, y, capacity, returnPrize);
 
 	}
 
