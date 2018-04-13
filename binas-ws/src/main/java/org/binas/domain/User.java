@@ -11,8 +11,8 @@ public class User {
 
     public User(String email, boolean hasBina, int credit) {
         this.email = email;
-        this.hasBina.set(hasBina);
-        this.credit.set(credit);
+        this.hasBina = new AtomicBoolean(hasBina);
+        this.credit = new AtomicInteger(credit);
     }
 
     public String getEmail() {
