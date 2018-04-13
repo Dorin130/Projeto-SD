@@ -52,7 +52,7 @@ public class test_returnBinaIT extends BaseIT{
     @Test
     public void returnBinaToStationWithOneReturnValue() throws AlreadyHasBina_Exception, NoBinaAvail_Exception,
             NoCredit_Exception, InvalidStation_Exception, UserNotExists_Exception, FullStation_Exception, NoBinaRented_Exception {
-        client.rentBina(S1, USER);
+        client.rentBina(S2, USER);
         client.returnBina(S2,USER);
         Assert.assertEquals(INITIAL_POINTS, client.getCredit(USER));
     }

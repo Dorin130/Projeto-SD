@@ -12,7 +12,10 @@ import java.util.List;
 public class test_listStationsIT extends BaseIT{
 
     @Before
-    public void setup() throws InvalidEmail_Exception, EmailExists_Exception {
+    public void setup() throws InvalidEmail_Exception, EmailExists_Exception, BadInit_Exception {
+        client.testInitStation(S1,50, 22, 6, S1BONUS);
+        client.testInitStation(S2,80, 20, 12, S2BONUS);
+        client.testInitStation(S3,50, 50, 20, S3BONUS);
         client.activateUser(USER);
     }
 

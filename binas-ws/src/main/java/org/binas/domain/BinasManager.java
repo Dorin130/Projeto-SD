@@ -183,7 +183,6 @@ public class BinasManager  {
 		}
 		try {
 			station.testInit(x, y, capacity, returnPrize);
-			station.testClear();
 		} catch (BadInit_Exception e) {
 			throw new BadInitException("testInitStation: invalid parameters!");
 		}
