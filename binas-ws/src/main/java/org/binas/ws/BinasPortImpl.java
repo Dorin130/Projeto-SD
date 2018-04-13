@@ -23,7 +23,6 @@ import org.binas.station.ws.cli.StationClient;
  * This class implements the Web Service port type (interface). The annotations
  * below "map" the Java class to the WSDL definitions.
  */
-// TODO
 @WebService(endpointInterface = "org.binas.ws.BinasPortType",
         wsdlLocation = "binas.1_0.wsdl",
         name ="BinasWebService",

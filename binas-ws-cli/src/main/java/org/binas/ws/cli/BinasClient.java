@@ -20,6 +20,10 @@ import org.binas.ws.NoCredit_Exception;
 import org.binas.ws.StationView;
 import org.binas.ws.UserNotExists_Exception;
 import org.binas.ws.UserView;
+
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
+import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
+
 import static javax.xml.ws.BindingProvider.ENDPOINT_ADDRESS_PROPERTY;
 
 /**
@@ -76,7 +80,14 @@ public class BinasClient implements BinasPortType {
 
 	/** UDDI lookup */
 	private void uddiLookup() throws BinasClientException {
-		// TODO
+		UDDINaming uddiNaming;
+		try {
+			uddiNaming = new UDDINaming(uddiURL);
+			wsURL = uddiNaming.lookup(wsName);
+		} catch (UDDINamingException e) {
+			System.err.println("Binas client: uddiLookup failed");
+			e.printStackTrace();
+		}
 	}
 
 	/** Stub creation and configuration */
