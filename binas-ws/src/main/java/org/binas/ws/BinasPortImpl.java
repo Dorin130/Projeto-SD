@@ -55,6 +55,9 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
+    	if(numberOfStations < 0)
+    		return new ArrayList<StationView>(0);
+    	
         BinasManager bm = BinasManager.getInstance();
         ArrayList<StationClient> stations = bm.findActiveStations();
         ArrayList<StationView> stationViews = new ArrayList<>();

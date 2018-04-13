@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
 
 
 public class BinasManager  {
-
 	private Pattern emailPattern;
 
 	private static String wsName  = null;

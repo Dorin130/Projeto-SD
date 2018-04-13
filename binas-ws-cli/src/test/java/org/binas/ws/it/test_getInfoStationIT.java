@@ -3,7 +3,6 @@ package org.binas.ws.it;
 import org.binas.ws.*;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class test_getInfoStationIT extends BaseIT{
@@ -17,8 +16,8 @@ public class test_getInfoStationIT extends BaseIT{
         Assert.assertEquals(0 ,sv1.getFreeDocks());
         Assert.assertEquals(0 ,sv1.getTotalGets());
         Assert.assertEquals(0 ,sv1.getTotalReturns());
-        Assert.assertEquals(22 ,sv1.getCoordinate().getX().intValue());
-        Assert.assertEquals(7 ,sv1.getCoordinate().getY().intValue());
+        Assert.assertEquals(50 ,sv1.getCoordinate().getX().intValue());
+        Assert.assertEquals(22 ,sv1.getCoordinate().getY().intValue());
         Assert.assertEquals(S1 ,sv1.getId());
 
         StationView sv2 = client.getInfoStation(S2);
