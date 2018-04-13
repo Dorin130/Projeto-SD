@@ -11,6 +11,7 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,7 +22,7 @@ public class BinasManager  {
 	private static String wsName  = null;
 	private static String uddiURL = null;
 
-	private static int initialPoints = 10;
+	private static AtomicInteger initialPoints = new AtomicInteger(10);
     private Map<String, User> users = new HashMap<>();
 	
 	// Singleton -------------------------------------------------------------
@@ -43,7 +44,7 @@ public class BinasManager  {
 		private static final BinasManager INSTANCE = new BinasManager();
 	}
 
-	public synchronized ArrayList<StationClient> findActiveStations() {
+	public ArrayList<StationClient> findActiveStations() {
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
 		UDDINaming uddiNaming;
 		try {
@@ -60,7 +61,7 @@ public class BinasManager  {
         return activeStationClients;
 	}
 
-	public synchronized StationClient lookupStation(String stationID) {
+	public StationClient lookupStation(String stationID) {
 		StationClient stationClient = null;
 		UDDINaming uddiNaming;
 		try {
@@ -90,86 +91,94 @@ public class BinasManager  {
 			this.uddiURL = uddiURL;
 	}
 
-	//Obter informaçao feito no impl
-	public synchronized User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
-		//TODO invalid email address throw
+	public User activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
 		checkEmail(emailAddress);
 
-		User newUser = new User(emailAddress, false, initialPoints);
-		users.put(emailAddress, newUser);
-		return newUser;
+		User newUser;
+		synchronized(users) {
+			if(hasEmail(emailAddress)) throw new EmailExistsException();
+			newUser = new User(emailAddress, false, initialPoints.get());
+			users.put(emailAddress, newUser);
+		}
 		
+		return newUser;
 	}
+	
 	private void checkEmail(String email) throws EmailExistsException, InvalidEmailException {
 		if(email == null || email.trim().equals("")) throw new InvalidEmailException();
-		Matcher matcher = this.emailPattern.matcher(email);
 		
+		Matcher matcher = this.emailPattern.matcher(email);
 		if(!matcher.matches()) throw new InvalidEmailException();
-
-		if(hasEmail(email)) throw new EmailExistsException();
 	}
 	
 	public boolean hasEmail(String email) {
 		return users.containsKey(email);
 	}
+	
 	public User getUser(String email) {
-			return users.get(email);
+		return users.get(email);
 	}
 
-	public synchronized void getBina(String stationId, String userEmail)  throws AlreadyHasBinaException,
+	public void getBina(String stationId, String userEmail)  throws AlreadyHasBinaException,
 			InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
 
-			if(!hasEmail(userEmail)) throw new UserNotExistsException();
+			User user = getUser(userEmail);
+			if(user == null) throw new UserNotExistsException();
+			
+			synchronized(user) {
+				if(user.getCredit() < 1) throw new NoCreditException();
+				if(user.hasBina()) throw  new AlreadyHasBinaException();
+				
+				StationClient stationClient = lookupStation(stationId);
+				if(stationClient == null) throw new InvalidStationException();
+				
+				try {
+					stationClient.getBina();
+				} catch (NoBinaAvail_Exception e) {
+					throw new NoBinaAvailException("");
+				}
+				
+				user.setHasBina(true);
+				user.setCredit(user.getCredit()-1);
+			}
+	}
+
+	public void returnBina(String stationId, String userEmail)
+			throws FullStationException, InvalidStationException,NoBinaRentedException, UserNotExistsException {
+
+		User user = getUser(userEmail);
+		if(user == null) throw new UserNotExistsException();
+		
+		synchronized(user) {
+			if(!user.hasBina()) throw new NoBinaRentedException();
 
 			StationClient stationClient = lookupStation(stationId);
 			if(stationClient == null) throw new InvalidStationException();
 
-			User user = getUser(userEmail);
-			if(user.getCredit() < 1) throw new NoCreditException();
-			if(user.hasBina()) throw  new AlreadyHasBinaException();
-
+			int bonus;
 			try {
-				stationClient.getBina();
-			} catch (NoBinaAvail_Exception e) {
-				throw new NoBinaAvailException("");
+				bonus = stationClient.returnBina();
+			} catch (NoSlotAvail_Exception e) {
+				throw new FullStationException();
 			}
-			user.setHasBina(true);
-			user.setCredit(user.getCredit()-1);
-	}
-
-	public synchronized  void returnBina(String stationId, String userEmail)
-			throws FullStationException, InvalidStationException,NoBinaRentedException, UserNotExistsException {
-
-		if(!hasEmail(userEmail)) throw new UserNotExistsException();
-
-		User user = getUser(userEmail);
-		if(!user.hasBina()) throw new NoBinaRentedException();
-
-		StationClient stationClient = lookupStation(stationId);
-		if(stationClient == null) throw new InvalidStationException();
-
-		int bonus;
-		try {
-			bonus = stationClient.returnBina();
-		} catch (NoSlotAvail_Exception e) {
-			throw new FullStationException();
+			
+			user.setHasBina(false);
+			user.setCredit(user.getCredit() + bonus);
 		}
-		
-		user.setHasBina(false);
-		user.setCredit(user.getCredit() + bonus);
 	}
 
 
-	public synchronized int getCredit(String userEmail) throws UserNotExistsException {
-		if(!hasEmail(userEmail)) throw new UserNotExistsException();
-		return users.get(userEmail).getCredit();
+	public int getCredit(String userEmail) throws UserNotExistsException {
+		User user = users.get(userEmail);
+		if(user == null) throw new UserNotExistsException();
+		return user.getCredit();
 	}
 
 	// test methods -------
 
 	public void testInit(int userInitialPoints) throws BadInitException {
 		if(userInitialPoints >= 0) {
-			initialPoints = userInitialPoints;
+			initialPoints.set(userInitialPoints);
 		} else {
 			throw new BadInitException("initial points must be non negative");
 		}
