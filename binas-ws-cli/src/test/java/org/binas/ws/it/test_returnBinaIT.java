@@ -30,8 +30,8 @@ public class test_returnBinaIT extends BaseIT{
         client.returnBina(S3, USER2);
         Assert.assertEquals(INITIAL_POINTS - 1 + S3BONUS ,client.getCredit(USER2));
 
-        client.returnBina(S2, USER3);
-        Assert.assertEquals(INITIAL_POINTS - 1 + S2BONUS ,client.getCredit(USER3));
+        client.returnBina(S1, USER3);
+        Assert.assertEquals(INITIAL_POINTS - 1 + S1BONUS ,client.getCredit(USER3));
     }
 
     @Test(expected=FullStation_Exception.class)
