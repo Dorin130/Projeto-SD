@@ -23,6 +23,9 @@ public class BaseIT {
 	protected static final String S1 = "A17_Station1";
 	protected static final String S2 = "A17_Station2";
 	protected static final String S3 = "A17_Station3";
+	protected static final int S1BONUS = 2;
+	protected static final int S2BONUS = 1;
+	protected static final int S3BONUS = 0;
 	protected static final int INITIAL_POINTS = 10;
 	protected static final String USER = "LucasRafael@tecnico.ulisboa.pt";
 	protected static final String USER2 = "Hugo.Guerreiro@tecnico.ulisboa.pt";
@@ -32,7 +35,6 @@ public class BaseIT {
 	protected static final CoordinatesView CLOSE_TO_S2 = new CoordinatesView();
 	protected static final CoordinatesView CLOSE_TO_S3 = new CoordinatesView();
 	protected static final CoordinatesView MIDPOINT = new CoordinatesView();
-	protected static final CoordinatesView MIDPOINTHELPER = new CoordinatesView();
 	protected static final CoordinatesView TESTPOINT = new CoordinatesView();
 
 	@BeforeClass
@@ -63,9 +65,9 @@ public class BaseIT {
 		client.setVerbose("true".equalsIgnoreCase(verboseEnabled));
 
 		client.testInit(INITIAL_POINTS);
-		client.testInitStation(S1,50, 22, 6, 2);
-		client.testInitStation(S2,80, 20, 12, 1);
-		client.testInitStation(S3,50, 50, 20, 0);
+		client.testInitStation(S1,50, 22, 6, S1BONUS);
+		client.testInitStation(S2,80, 20, 12, S2BONUS);
+		client.testInitStation(S3,50, 50, 20, S3BONUS);
 
 		CLOSE_TO_S1.setX(50);
 		CLOSE_TO_S1.setY(21);
