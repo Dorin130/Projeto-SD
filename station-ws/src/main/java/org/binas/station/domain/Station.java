@@ -8,11 +8,7 @@ import org.binas.station.domain.exception.NoSlotAvailException;
 
 /** Domain Root. */
 public class Station {
-	
-	/** Creates and returns default coordinates. */
-	private static final Coordinates DEFAULT_COORDINATES = new Coordinates(5, 5);
-	private static final int DEFAULT_MAX_CAPACITY = 20;
-	private static final int DEFAULT_BONUS = 0;
+
 	
 	/** Station identifier. */
 	private String id;

@@ -45,7 +45,7 @@ public class BinasClientApp {
 
         System.out.println("Invoke testClear()");
         client.testClear();
-        System.out.println(client.getCredit("meme@big.boi"));
+        /*System.out.println(client.getCredit("meme@big.boi"));
 
 		System.out.println("Invoke activateUser()");
 		UserView user = client.activateUser("meme@big.boi");
@@ -53,8 +53,8 @@ public class BinasClientApp {
 
         System.out.println("Invoke testClear()");
         client.testClear();
-        System.out.println(client.getCredit("meme@big.boi"));
-        
+        System.out.println(client.getCredit("meme@big.boi"));*/
+
 	 }
 }
 
