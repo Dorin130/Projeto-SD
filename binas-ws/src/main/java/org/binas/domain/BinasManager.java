@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
 
 
 public class BinasManager  {
-	private static final String EMAIL_PATTERN =	"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*$";
+	//private static final String EMAIL_PATTERN =	"^[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*@ "+ "[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*$";
+
 	private Pattern emailPattern;
 
 	private static String wsName  = null;
@@ -27,6 +28,11 @@ public class BinasManager  {
 	
 	// Singleton -------------------------------------------------------------
 	private BinasManager() {
+		String namePart = "[A-Za-z0-9]+";
+		String nameSep = "\\.";
+		String name = namePart + "("+nameSep+namePart+")*";
+		String mailSep = "@";
+		String EMAIL_PATTERN =	name + mailSep + name;
 		this.emailPattern = Pattern.compile(EMAIL_PATTERN); //used to validate user emails
 
 	}

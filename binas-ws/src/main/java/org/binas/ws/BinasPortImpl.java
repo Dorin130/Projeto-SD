@@ -64,16 +64,11 @@ public class BinasPortImpl implements BinasPortType {
         }
 
         stationViews.sort(new CoordinatesComparator(coordinates));
-
-        if(numberOfStations > stations.size()) {
-            return stationViews;
-        }
-        for(int i=numberOfStations; i < stations.size() ; i++  ) {
-            stations.remove(i);
-        }
-        stations.trimToSize();
-        return stationViews;
-
+        
+        if(numberOfStations > stationViews.size()) 
+        	return stationViews;
+        else
+        	return stationViews.subList(0, numberOfStations);
     }
 
     /**
