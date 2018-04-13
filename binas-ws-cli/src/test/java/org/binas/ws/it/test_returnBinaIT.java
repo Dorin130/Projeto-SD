@@ -14,9 +14,9 @@ public class test_returnBinaIT extends BaseIT{
         client.activateUser(USER);
         client.activateUser(USER2);
         client.activateUser(USER3);
-        client.testInitStation(S1,50, 22, 6, S1BONUS);
-        client.testInitStation(S2,80, 20, 12, S2BONUS);
-        client.testInitStation(S3,50, 50, 20, S3BONUS);
+		client.testInitStation(S1, S1X, S1Y, S1CAP, S1BONUS);
+		client.testInitStation(S2, S2X, S2Y, S2CAP, S2BONUS);
+		client.testInitStation(S3, S3X, S3Y, S3CAP, S3BONUS);
 
     }
 
