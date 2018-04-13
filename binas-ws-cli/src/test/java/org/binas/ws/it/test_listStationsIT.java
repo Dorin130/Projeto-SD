@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class test_listStationsIT extends BaseIT{
@@ -41,17 +42,25 @@ public class test_listStationsIT extends BaseIT{
     public void listStationsMidpointSuccess(){
         List<StationView> stationViews = client.listStations(2, MIDPOINT);
         Assert.assertEquals(2, stationViews.size());
-        Assert.assertEquals(S1, stationViews.get(0).getId());
-        Assert.assertEquals(S3, stationViews.get(1).getId());
+        ArrayList<String> results = new ArrayList<String>();
+        for(StationView sv : stationViews) {
+        	results.add(sv.getId());
+        }
+        Assert.assertTrue(results.contains(S1));
+        Assert.assertTrue(results.contains(S3));
     }
 
     @Test
     public void listStationsMapPointSuccess(){
         List<StationView> stationViews = client.listStations(3, TESTPOINT);
         Assert.assertEquals(3, stationViews.size());
-        Assert.assertEquals(S1, stationViews.get(0).getId());
-        Assert.assertEquals(S3, stationViews.get(1).getId());
-        Assert.assertEquals(S2, stationViews.get(2).getId());
+        ArrayList<String> results = new ArrayList<String>();
+        for(StationView sv : stationViews) {
+        	results.add(sv.getId());
+        }
+        Assert.assertTrue(results.contains(S1));
+        Assert.assertTrue(results.contains(S2));
+        Assert.assertTrue(results.contains(S3));
     }
 
     @Test
@@ -64,7 +73,7 @@ public class test_listStationsIT extends BaseIT{
     public void listStationsOneListStations(){
         List<StationView> stationViews = client.listStations(1, CLOSE_TO_S1);
         Assert.assertEquals(1, stationViews.size());
-        Assert.assertEquals(S1, stationViews.get(0));
+        Assert.assertEquals(S1, stationViews.get(0).getId());
     }
 
     @Test
