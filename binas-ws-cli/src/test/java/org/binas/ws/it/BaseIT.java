@@ -3,6 +3,7 @@ package org.binas.ws.it;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.binas.ws.CoordinatesView;
 import org.binas.ws.cli.BinasClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -18,6 +19,23 @@ public class BaseIT {
 	protected static Properties testProps;
 
 	protected static BinasClient client;
+
+	protected static final String S1 = "A17_Station1";
+	protected static final String S2 = "A17_Station2";
+	protected static final String S3 = "A17_Station3";
+	protected static final int S1BONUS = 2;
+	protected static final int S2BONUS = 1;
+	protected static final int S3BONUS = 0;
+	protected static final int INITIAL_POINTS = 10;
+	protected static final String USER = "LucasRafael@tecnico.ulisboa.pt";
+	protected static final String USER2 = "Hugo.Guerreiro@tecnico.ulisboa.pt";
+	protected static final String USER3 = "zucc@facebook";
+
+	protected static final CoordinatesView CLOSE_TO_S1 = new CoordinatesView();
+	protected static final CoordinatesView CLOSE_TO_S2 = new CoordinatesView();
+	protected static final CoordinatesView CLOSE_TO_S3 = new CoordinatesView();
+	protected static final CoordinatesView MIDPOINT = new CoordinatesView();
+	protected static final CoordinatesView TESTPOINT = new CoordinatesView();
 
 	@BeforeClass
 	public static void oneTimeSetup() throws Exception {
@@ -46,6 +64,25 @@ public class BaseIT {
 		}
 		client.setVerbose("true".equalsIgnoreCase(verboseEnabled));
 
+		client.testInit(INITIAL_POINTS);
+		client.testInitStation(S1,50, 22, 6, S1BONUS);
+		client.testInitStation(S2,80, 20, 12, S2BONUS);
+		client.testInitStation(S3,50, 50, 20, S3BONUS);
+
+		CLOSE_TO_S1.setX(50);
+		CLOSE_TO_S1.setY(21);
+
+		CLOSE_TO_S2.setX(80);
+		CLOSE_TO_S2.setY(21);
+
+		CLOSE_TO_S3.setX(50);
+		CLOSE_TO_S3.setY(51);
+
+		MIDPOINT.setX(50);
+		MIDPOINT.setY(36);
+
+		TESTPOINT.setX(58);
+		TESTPOINT.setY(32);
 	}
 
 	@AfterClass

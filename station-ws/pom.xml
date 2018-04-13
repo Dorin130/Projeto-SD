@@ -26,8 +26,10 @@
 		<ws.port>808${ws.i}</ws.port>
 		<ws.url>http://${ws.host}:${ws.port}/station-ws/endpoint</ws.url>
 
+		<uddi.user>a17</uddi.user>
+		<uddi.pass>3VRki4z</uddi.pass>
+		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 		<ws.name>A17_Station${ws.i}</ws.name>
-		<uddi.url>http://localhost:9090</uddi.url>
 
 	</properties>
 
@@ -36,6 +38,16 @@
 			<groupId>com.sun.xml.ws</groupId>
 			<artifactId>jaxws-rt</artifactId>
 			<version>2.2.10</version>
+		</dependency>
+		<dependency>
+			<groupId>pt.ulisboa.tecnico.sdis</groupId>
+			<artifactId>uddi-naming</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>antlr</groupId>
+			<artifactId>antlr</artifactId>
+			<version>2.7.2</version>
 		</dependency>
 	</dependencies>
 
@@ -92,6 +104,7 @@
 					<arguments>
 						<argument>${ws.name}</argument>
 						<argument>${ws.url}</argument>
+						<argument>${uddi.url}</argument>
 					</arguments>
 				</configuration>
 			</plugin>
