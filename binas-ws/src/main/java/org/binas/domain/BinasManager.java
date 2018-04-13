@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 
 
 public class BinasManager  {
+	//private static final String EMAIL_PATTERN =	"^[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*@ "+ "[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*$";
+
 	private Pattern emailPattern;
 
 	private static String wsName  = null;
@@ -192,7 +194,6 @@ public class BinasManager  {
 		}
 		try {
 			station.testInit(x, y, capacity, returnPrize);
-			station.testClear();
 		} catch (BadInit_Exception e) {
 			throw new BadInitException("testInitStation: invalid parameters!");
 		}

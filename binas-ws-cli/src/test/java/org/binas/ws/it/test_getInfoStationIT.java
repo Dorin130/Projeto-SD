@@ -3,13 +3,26 @@ package org.binas.ws.it;
 import org.binas.ws.*;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class test_getInfoStationIT extends BaseIT{
 
+    @Before
+    public void setup() throws BadInit_Exception {
+        client.testInitStation(S1,50, 22, 6, S1BONUS);
+        client.testInitStation(S2,80, 20, 12, S2BONUS);
+        client.testInitStation(S3,50, 50, 20, S3BONUS);
+    }
+
     @Test
     public void getInfoStationSuccess() throws InvalidStation_Exception, NoBinaAvail_Exception, NoCredit_Exception,
-            AlreadyHasBina_Exception, UserNotExists_Exception, EmailExists_Exception, InvalidEmail_Exception {
+            AlreadyHasBina_Exception, UserNotExists_Exception, EmailExists_Exception, InvalidEmail_Exception, BadInit_Exception {
+
+        client.testInitStation(S1,50, 22, 6, S1BONUS);
+        client.testInitStation(S2,80, 20, 12, S2BONUS);
+        client.testInitStation(S3,50, 50, 20, S3BONUS);
+
         StationView sv1 = client.getInfoStation(S1);
         Assert.assertEquals(6 ,sv1.getCapacity());
         Assert.assertEquals(6 ,sv1.getAvailableBinas());

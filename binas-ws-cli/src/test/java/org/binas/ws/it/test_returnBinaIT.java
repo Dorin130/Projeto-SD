@@ -10,10 +10,14 @@ import org.junit.Test;
 public class test_returnBinaIT extends BaseIT{
 
     @Before
-    public void setup() throws InvalidEmail_Exception, EmailExists_Exception {
+    public void setup() throws InvalidEmail_Exception, EmailExists_Exception, BadInit_Exception {
         client.activateUser(USER);
         client.activateUser(USER2);
         client.activateUser(USER3);
+        client.testInitStation(S1,50, 22, 6, S1BONUS);
+        client.testInitStation(S2,80, 20, 12, S2BONUS);
+        client.testInitStation(S3,50, 50, 20, S3BONUS);
+
     }
 
     @Test
@@ -30,8 +34,8 @@ public class test_returnBinaIT extends BaseIT{
         client.returnBina(S3, USER2);
         Assert.assertEquals(INITIAL_POINTS - 1 + S3BONUS ,client.getCredit(USER2));
 
-        client.returnBina(S2, USER3);
-        Assert.assertEquals(INITIAL_POINTS - 1 + S2BONUS ,client.getCredit(USER3));
+        client.returnBina(S1, USER3);
+        Assert.assertEquals(INITIAL_POINTS - 1 + S1BONUS ,client.getCredit(USER3));
     }
 
     @Test(expected=FullStation_Exception.class)
@@ -52,7 +56,7 @@ public class test_returnBinaIT extends BaseIT{
     @Test
     public void returnBinaToStationWithOneReturnValue() throws AlreadyHasBina_Exception, NoBinaAvail_Exception,
             NoCredit_Exception, InvalidStation_Exception, UserNotExists_Exception, FullStation_Exception, NoBinaRented_Exception {
-        client.rentBina(S1, USER);
+        client.rentBina(S2, USER);
         client.returnBina(S2,USER);
         Assert.assertEquals(INITIAL_POINTS, client.getCredit(USER));
     }
