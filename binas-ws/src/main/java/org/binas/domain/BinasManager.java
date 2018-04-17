@@ -64,6 +64,7 @@ public class BinasManager  {
 	}
 
 	public StationClient lookupStation(String stationID) {
+		if(stationID == null) return null;
 		StationClient stationClient = null;
 		UDDINaming uddiNaming;
 		try {
