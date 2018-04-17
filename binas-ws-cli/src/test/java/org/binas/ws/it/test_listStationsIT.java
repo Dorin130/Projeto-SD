@@ -84,6 +84,18 @@ public class test_listStationsIT extends BaseIT{
         List<StationView> stationViews = client.listStations(-1, CLOSE_TO_S1);
         Assert.assertEquals(0, stationViews.size());
     }
+    
+    @Test
+    public void listStationsNullKInListStation(){
+        List<StationView> stationViews = client.listStations(null, CLOSE_TO_S1);
+        Assert.assertEquals(0, stationViews.size());
+    }
+    
+    @Test
+    public void listStationsNullCoordinatesInListStation(){
+        List<StationView> stationViews = client.listStations(3, null);
+        Assert.assertEquals(0, stationViews.size());
+    }
 
     @After
     public void after() {
