@@ -56,6 +56,17 @@ public class StationPortImpl implements StationPortType {
         return result;
     }
 
+    @Override
+    public UserReplic getBalance(String email) throws InvalidUser_Exception {
+        return null;
+    }
+
+    @Override
+    public void setBalance(String email, UserReplic user) throws InvalidUser_Exception {
+
+    }
+
+
     /** Take a bike from the station. */
     @Override
     public void getBina() throws NoBinaAvail_Exception {

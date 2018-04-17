@@ -37,6 +37,13 @@
                 </xs:sequence>
             </xs:complexType>
 
+            <xs:complexType name="userReplic">
+                <xs:sequence>
+                    <xs:element name="email" type="xs:string" />
+                    <xs:element name="points" type="xs:int" />
+                </xs:sequence>
+            </xs:complexType>
+
             <xs:complexType name="getInfo">
                 <xs:sequence />
             </xs:complexType>
@@ -71,6 +78,33 @@
             </xs:complexType>
             <xs:element name="returnBinaResponse" type="tns:returnBinaResponse" />
 
+            <xs:complexType name="getBalance">
+                <xs:sequence>
+                    <xs:element name="email" type="xs:string" />
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="getBalance" type="tns:getBalance" />
+
+            <xs:complexType name="getBalanceResponse">
+                <xs:sequence>
+                    <xs:element name="return" type="tns:userReplic" />
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="getBalanceResponse" type="tns:getBalanceResponse" />
+
+            <xs:complexType name="setBalance">
+                <xs:sequence>
+                    <xs:element name="email" type="xs:string" />
+                    <xs:element name="user" type="tns:userReplic" />
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="setBalance" type="tns:setBalance" />
+
+            <xs:complexType name="setBalanceResponse">
+                <xs:sequence/>
+            </xs:complexType>
+            <xs:element name="setBalanceResponse" type="tns:setBalanceResponse" />
+
             <xs:complexType name="NoBinaAvail">
                 <xs:sequence>
                     <xs:element name="message" type="xs:string" minOccurs="0" />
@@ -84,6 +118,13 @@
                 </xs:sequence>
             </xs:complexType>
             <xs:element name="NoSlotAvail" type="tns:NoSlotAvail" />
+
+            <xs:complexType name="InvalidUser">
+                <xs:sequence>
+                    <xs:element name="message" type="xs:string" minOccurs="0" />
+                </xs:sequence>
+            </xs:complexType>
+            <xs:element name="InvalidUser" type="tns:NoSlotAvail" />
 
 
             <!-- test control operations data types -->
@@ -162,11 +203,28 @@
         <part name="parameters" element="tns:returnBinaResponse" />
     </message>
 
+    <message name="getBalance">
+        <part name="parameters" element="tns:getBalance" />
+    </message>
+    <message name="getBalanceResponse">
+        <part name="parameters" element="tns:getBalanceResponse" />
+    </message>
+
+    <message name="setBalance">
+        <part name="parameters" element="tns:setBalance" />
+    </message>
+    <message name="setBalanceResponse">
+        <part name="parameters" element="tns:setBalanceResponse" />
+    </message>
+
     <message name="NoSlotAvail">
         <part name="fault" element="tns:NoSlotAvail" />
     </message>
     <message name="NoBinaAvail">
         <part name="fault" element="tns:NoBinaAvail" />
+    </message>
+    <message name="InvalidUser">
+        <part name="fault" element="tns:InvalidUser" />
     </message>
 
     <!-- test control messages -->
@@ -222,6 +280,24 @@
                     message="tns:returnBinaResponse" />
             <fault message="tns:NoSlotAvail" name="NoSlotAvail"
                    wsam:Action="http://ws.station.binas.org/Station/returnBina/Fault/NoSlotAvail" />
+        </operation>
+
+        <operation name="getBalance">
+            <input wsam:Action="http://ws.station.binas.org/Station/getBalanceRequest"
+                   message="tns:getBalance" />
+            <output wsam:Action="http://ws.station.binas.org/Station/getBalanceResponse"
+                    message="tns:getBalanceResponse" />
+            <fault message="tns:InvalidUser" name="InvalidUser"
+                   wsam:Action="http://ws.station.binas.org/Station/returnBina/Fault/InvalidUser" />
+        </operation>
+
+        <operation name="setBalance">
+            <input wsam:Action="http://ws.station.binas.org/Station/setBalanceRequest"
+                   message="tns:setBalance" />
+            <output wsam:Action="http://ws.station.binas.org/Station/setBalanceResponse"
+                    message="tns:setBalanceResponse" />
+            <fault message="tns:InvalidUser" name="InvalidUser"
+                   wsam:Action="http://ws.station.binas.org/Station/returnBina/Fault/InvalidUser" />
         </operation>
 
         <!-- test control operations -->
@@ -288,6 +364,32 @@
             </output>
             <fault name="NoSlotAvail">
                 <soap:fault name="NoSlotAvail" use="literal" />
+            </fault>
+        </operation>
+
+        <operation name="getBalance">
+            <soap:operation soapAction="" />
+            <input>
+                <soap:body use="literal" />
+            </input>
+            <output>
+                <soap:body use="literal" />
+            </output>
+            <fault name="InvalidUser">
+                <soap:fault name="InvalidUser" use="literal" />
+            </fault>
+        </operation>
+
+        <operation name="setBalance">
+            <soap:operation soapAction="" />
+            <input>
+                <soap:body use="literal" />
+            </input>
+            <output>
+                <soap:body use="literal" />
+            </output>
+            <fault name="InvalidUser">
+                <soap:fault name="InvalidUser" use="literal" />
             </fault>
         </operation>
 
