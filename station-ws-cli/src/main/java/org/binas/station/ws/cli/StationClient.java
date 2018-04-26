@@ -108,6 +108,16 @@ public class StationClient implements StationPortType {
 		return port.returnBina();
 	}
 
+	@Override
+	public UserReplica getBalance(String email) throws InvalidUser_Exception {
+		return port.getBalance(email);
+	}
+
+	@Override
+	public void setBalance(UserReplica user) {
+		port.setBalance(user);
+	}
+
 	// test control operations ------------------------------------------------
 
 	@Override

@@ -37,8 +37,9 @@
                 </xs:sequence>
             </xs:complexType>
 
-            <xs:complexType name="userReplic">
+            <xs:complexType name="userReplica">
                 <xs:sequence>
+                    <xs:element name="seq" type="xs:long" />
                     <xs:element name="email" type="xs:string" />
                     <xs:element name="points" type="xs:int" />
                 </xs:sequence>
@@ -87,21 +88,20 @@
 
             <xs:complexType name="getBalanceResponse">
                 <xs:sequence>
-                    <xs:element name="return" type="tns:userReplic" />
+                    <xs:element name="return" type="tns:userReplica" />
                 </xs:sequence>
             </xs:complexType>
             <xs:element name="getBalanceResponse" type="tns:getBalanceResponse" />
 
             <xs:complexType name="setBalance">
                 <xs:sequence>
-                    <xs:element name="email" type="xs:string" />
-                    <xs:element name="user" type="tns:userReplic" />
+                    <xs:element name="user" type="tns:userReplica" />
                 </xs:sequence>
             </xs:complexType>
             <xs:element name="setBalance" type="tns:setBalance" />
 
             <xs:complexType name="setBalanceResponse">
-                <xs:sequence/>
+                <xs:sequence />
             </xs:complexType>
             <xs:element name="setBalanceResponse" type="tns:setBalanceResponse" />
 
@@ -124,7 +124,7 @@
                     <xs:element name="message" type="xs:string" minOccurs="0" />
                 </xs:sequence>
             </xs:complexType>
-            <xs:element name="InvalidUser" type="tns:NoSlotAvail" />
+            <xs:element name="InvalidUser" type="tns:InvalidUser" />
 
 
             <!-- test control operations data types -->
@@ -296,8 +296,6 @@
                    message="tns:setBalance" />
             <output wsam:Action="http://ws.station.binas.org/Station/setBalanceResponse"
                     message="tns:setBalanceResponse" />
-            <fault message="tns:InvalidUser" name="InvalidUser"
-                   wsam:Action="http://ws.station.binas.org/Station/returnBina/Fault/InvalidUser" />
         </operation>
 
         <!-- test control operations -->
@@ -388,9 +386,6 @@
             <output>
                 <soap:body use="literal" />
             </output>
-            <fault name="InvalidUser">
-                <soap:fault name="InvalidUser" use="literal" />
-            </fault>
         </operation>
 
         <!-- test control operations -->

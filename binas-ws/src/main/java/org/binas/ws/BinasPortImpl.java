@@ -6,6 +6,7 @@ import org.binas.domain.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.jws.WebService;
 
@@ -17,6 +18,7 @@ import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.domain.exception.*;
+import org.binas.station.ws.UserReplica;
 import org.binas.station.ws.cli.StationClient;
 
 /**
@@ -31,6 +33,11 @@ import org.binas.station.ws.cli.StationClient;
         serviceName = "BinasService"
 )
 public class BinasPortImpl implements BinasPortType {
+
+    /**
+     * Sequence number counter.
+     * **/
+    private AtomicLong seq = new AtomicLong(0l);
 
     /**
      * The Endpoint manager controls the Web Service instance during its whole
@@ -124,7 +131,7 @@ public class BinasPortImpl implements BinasPortType {
      * @throws EmailExists_Exception
      * @throws InvalidEmail_Exception
      */
-    public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
+/*    public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
     	BinasManager bm = BinasManager.getInstance();
     	UserView view = null;
     	try {
@@ -138,6 +145,22 @@ public class BinasPortImpl implements BinasPortType {
     		throwInvalidEmail("This email is invalid");
     	}
     	return view;
+    }*/
+
+    public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
+        BinasManager bm = BinasManager.getInstance();
+        UserView view = null;
+        try {
+            User user = bm.activateUser(email);
+            synchronized(user) {
+                view = buildUserView(user);
+            }
+        } catch (EmailExistsException e) {
+            throwEmailExists("This email is already in use");
+        } catch (InvalidEmailException e) {
+            throwInvalidEmail("This email is invalid");
+        }
+        return view;
     }
 
 	/**
@@ -264,6 +287,16 @@ public class BinasPortImpl implements BinasPortType {
         }
     }
 
+    private void quorumSetBalance(String email, int points) {
+        long seq = this.seq.getAndIncrement();
+        BinasManager bm = BinasManager.getInstance();
+        ArrayList<StationClient> stations = bm.findActiveStations();
+
+        for (StationClient station: stations) {
+            station.setBalance(buildUserReplica(seq, email, points));
+        }
+    }
+
 
     // View helpers ----------------------------------------------------------
 
@@ -296,6 +329,14 @@ public class BinasPortImpl implements BinasPortType {
         svBinas.setTotalReturns(    svBinas.getTotalReturns());
 
         return svBinas;
+    }
+
+    public UserReplica buildUserReplica(long seq, String email, int points) {
+        UserReplica replica = new UserReplica();
+        replica.setEmail(email);
+        replica.setPoints(points);
+        replica.setSeq(seq);
+        return replica;
     }
 
     // Exception helpers -----------------------------------------------------

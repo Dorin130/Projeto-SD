@@ -3,6 +3,7 @@ package org.binas.station.ws;
 import org.binas.station.domain.Coordinates;
 import org.binas.station.domain.Station;
 import org.binas.station.domain.exception.BadInitException;
+import org.binas.station.domain.exception.InvalidUserException;
 import org.binas.station.domain.exception.NoBinaAvailException;
 import org.binas.station.domain.exception.NoSlotAvailException;
 
@@ -35,7 +36,6 @@ public class StationPortImpl implements StationPortType {
     // Main operations -------------------------------------------------------
 
     /** Retrieve information about station. */
-    @Override
     public StationView getInfo() {
         Station s = Station.getInstance();
         synchronized(s) {
@@ -57,13 +57,20 @@ public class StationPortImpl implements StationPortType {
     }
 
     @Override
-    public UserReplic getBalance(String email) throws InvalidUser_Exception {
-        return null;
+    public UserReplica getBalance(String email) throws InvalidUser_Exception {
+        Station s = Station.getInstance();
+        UserReplica empty = null;
+        try {
+        } catch (InvalidUserException e) {
+            throwInvalidUser("The user is invalid.");
+        }
+        return empty;
     }
 
     @Override
-    public void setBalance(String email, UserReplic user) throws InvalidUser_Exception {
-
+    public void setBalance(UserReplica user) {
+        Station s = Station.getInstance();
+        s.setUser(user);
     }
 
 
@@ -77,6 +84,8 @@ public class StationPortImpl implements StationPortType {
         	throwNoBinaAvail("There is no Bina available.");
         }
     }
+
+
 
     // Test Control operations -----------------------------------------------
 
@@ -157,11 +166,18 @@ public class StationPortImpl implements StationPortType {
         throw new NoSlotAvail_Exception(message, faultInfo);
     }
 
-    //** Helper to throw a new BadInit exception. */
+    /** Helper to throw a new BadInit exception. */
     private void throwBadInit(final String message) throws BadInit_Exception {
         BadInit faultInfo = new BadInit();
         faultInfo.message = message;
         throw new BadInit_Exception(message, faultInfo);
     }
+    /** Helper to throw a new InvalidUser exception. */
+    private void throwInvalidUser(final String message) throws InvalidUser_Exception {
+        InvalidUser faultInfo = new InvalidUser();
+        faultInfo.message = message;
+        throw new InvalidUser_Exception(message, faultInfo);
+    }
+
 
 }
