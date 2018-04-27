@@ -14,7 +14,7 @@ import javax.jws.WebService;
  * below "map" the Java class to the WSDL definitions.
  */
 @WebService(endpointInterface = "org.binas.station.ws.StationPortType",
-        wsdlLocation = "station.1_0.wsdl",
+        wsdlLocation = "station.2_0.wsdl",
         name ="StationWebService",
         portName = "StationPort",
         targetNamespace="http://ws.station.binas.org/",
@@ -27,6 +27,15 @@ public class StationPortImpl implements StationPortType {
      * lifecycle.
      */
     private StationEndpointManager endpointManager;
+    private int lag;
+
+    private void sleep() {
+        try {
+            Thread.sleep(this.lag);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     /** Constructor receives a reference to the endpoint manager. */
     public StationPortImpl(StationEndpointManager endpointManager) {
@@ -37,6 +46,7 @@ public class StationPortImpl implements StationPortType {
 
     /** Retrieve information about station. */
     public StationView getInfo() {
+        sleep();
         Station s = Station.getInstance();
         synchronized(s) {
         	return buildStationView(s);
@@ -46,6 +56,7 @@ public class StationPortImpl implements StationPortType {
     /** Return a bike to the station. */
     @Override
     public int returnBina() throws NoSlotAvail_Exception {
+        sleep();
         Station s = Station.getInstance();
         int result = -1;
         try {
@@ -58,9 +69,11 @@ public class StationPortImpl implements StationPortType {
 
     @Override
     public UserReplica getBalance(String email) throws InvalidUser_Exception {
+        sleep();
         Station s = Station.getInstance();
         UserReplica empty = null;
         try {
+            s.getUser(email);
         } catch (InvalidUserException e) {
             throwInvalidUser("The user is invalid.");
         }
@@ -69,6 +82,7 @@ public class StationPortImpl implements StationPortType {
 
     @Override
     public void setBalance(UserReplica user) {
+        sleep();
         Station s = Station.getInstance();
         s.setUser(user);
     }
@@ -77,6 +91,7 @@ public class StationPortImpl implements StationPortType {
     /** Take a bike from the station. */
     @Override
     public void getBina() throws NoBinaAvail_Exception {
+        sleep();
         Station s = Station.getInstance();
         try {
             s.getBina();
@@ -92,6 +107,7 @@ public class StationPortImpl implements StationPortType {
     /** Diagnostic operation to check if service is running. */
     @Override
     public String testPing(String inputMessage) {
+        sleep();
         // If no input is received, return a default name.
         if (inputMessage == null || inputMessage.trim().length() == 0)
             inputMessage = "friend";
@@ -111,6 +127,7 @@ public class StationPortImpl implements StationPortType {
     /** Return all station variables to default values. */
     @Override
     public void testClear() {
+        sleep();
         Station.getInstance().reset();
     }
 
@@ -118,6 +135,7 @@ public class StationPortImpl implements StationPortType {
     @Override
     public void testInit(int x, int y, int capacity, int returnPrize) throws
             BadInit_Exception {
+        sleep();
         try {
             Station.getInstance().init(x, y, capacity, returnPrize);
         } catch (BadInitException e) {
@@ -180,4 +198,7 @@ public class StationPortImpl implements StationPortType {
     }
 
 
+    public void setLag(int lag) {
+        this.lag = lag;
+    }
 }
