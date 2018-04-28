@@ -13,9 +13,9 @@ public class test_listStationsIT extends BaseIT{
 
     @Before
     public void setup() throws InvalidEmail_Exception, EmailExists_Exception, BadInit_Exception {
-        client.testInitStation(S1,50, 22, 6, S1BONUS);
-        client.testInitStation(S2,80, 20, 12, S2BONUS);
-        client.testInitStation(S3,50, 50, 20, S3BONUS);
+		client.testInitStation(S1, S1X, S1Y, S1CAP, S1BONUS);
+		client.testInitStation(S2, S2X, S2Y, S2CAP, S2BONUS);
+		client.testInitStation(S3, S3X, S3Y, S3CAP, S3BONUS);
         client.activateUser(USER);
     }
 
@@ -31,14 +31,14 @@ public class test_listStationsIT extends BaseIT{
         stationViews = client.listStations(3, CLOSE_TO_S2);
         Assert.assertEquals(3, stationViews.size());
         Assert.assertEquals(S2, stationViews.get(0).getId());
-        Assert.assertEquals(S1, stationViews.get(1).getId());
-        Assert.assertEquals(S3, stationViews.get(2).getId());
+        Assert.assertEquals(S3, stationViews.get(1).getId());
+        Assert.assertEquals(S1, stationViews.get(2).getId());
 
         stationViews = client.listStations(3, CLOSE_TO_S3);
         Assert.assertEquals(3, stationViews.size());
         Assert.assertEquals(S3, stationViews.get(0).getId());
-        Assert.assertEquals(S1, stationViews.get(1).getId());
-        Assert.assertEquals(S2, stationViews.get(2).getId());
+        Assert.assertEquals(S2, stationViews.get(1).getId());
+        Assert.assertEquals(S1, stationViews.get(2).getId());
     }
 
     @Test
@@ -49,7 +49,7 @@ public class test_listStationsIT extends BaseIT{
         for(StationView sv : stationViews) {
         	results.add(sv.getId());
         }
-        Assert.assertTrue(results.contains(S1));
+        Assert.assertTrue(results.contains(S2));
         Assert.assertTrue(results.contains(S3));
     }
 
