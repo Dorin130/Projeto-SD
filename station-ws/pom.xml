@@ -31,6 +31,8 @@
 		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 		<ws.name>A17_Station${ws.i}</ws.name>
 
+		<lag>100</lag>
+
 	</properties>
 
 	<dependencies>
@@ -105,6 +107,7 @@
 						<argument>${ws.name}</argument>
 						<argument>${ws.url}</argument>
 						<argument>${uddi.url}</argument>
+						<argument>${lag}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

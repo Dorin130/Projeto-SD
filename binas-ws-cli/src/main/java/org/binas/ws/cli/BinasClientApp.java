@@ -45,6 +45,9 @@ public class BinasClientApp {
 
         System.out.println("Invoke testClear()");
         client.testClear();
+
+        System.out.println("Invoke activateUser()");
+        client.activateUser("bigboi@meme");
         /*System.out.println(client.getCredit("meme@big.boi"));
 
 		System.out.println("Invoke activateUser()");

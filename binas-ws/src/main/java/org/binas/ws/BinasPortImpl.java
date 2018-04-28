@@ -4,10 +4,12 @@ import org.binas.domain.BinasManager;
 import org.binas.domain.CoordinatesComparator;
 import org.binas.domain.User;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.jws.WebService;
+import javax.xml.ws.Response;
 
 import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
@@ -17,6 +19,8 @@ import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.domain.exception.*;
+import org.binas.station.ws.SetBalanceResponse;
+import org.binas.station.ws.UserReplica;
 import org.binas.station.ws.cli.StationClient;
 
 /**
@@ -31,6 +35,12 @@ import org.binas.station.ws.cli.StationClient;
         serviceName = "BinasService"
 )
 public class BinasPortImpl implements BinasPortType {
+
+    /**
+     * Sequence number counter.
+     * **/
+    private final static int POLLING_RATE = 100;
+    private AtomicLong seq = new AtomicLong(0l);
 
     /**
      * The Endpoint manager controls the Web Service instance during its whole
@@ -54,7 +64,7 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
-    	if(numberOfStations < 0)
+    	if(numberOfStations == null || numberOfStations < 0 || coordinates == null)
     		return new ArrayList<StationView>(0);
     	
         BinasManager bm = BinasManager.getInstance();
@@ -124,20 +134,26 @@ public class BinasPortImpl implements BinasPortType {
      * @throws EmailExists_Exception
      * @throws InvalidEmail_Exception
      */
+
     public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
-    	BinasManager bm = BinasManager.getInstance();
-    	UserView view = null;
-    	try {
-        	User user = bm.activateUser(email);
-        	synchronized(user) {
-            	view = buildUserView(user);
-        	}
-    	} catch (EmailExistsException e) {
-    		throwEmailExists("This email is already in use");
-    	} catch (InvalidEmailException e) {
-    		throwInvalidEmail("This email is invalid");
-    	}
-    	return view;
+        BinasManager bm = BinasManager.getInstance();
+        UserView view = null;
+        try {
+            User user = bm.activateUser(email);
+            quorumSetBalance(email, user.getCredit());
+            synchronized(user) {
+                view = buildUserView(user);
+            }
+        } catch (EmailExistsException e) {
+            throwEmailExists("This email is already in use");
+        } catch (InvalidEmailException e) {
+            throwInvalidEmail("This email is invalid");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return view;
     }
 
 	/**
@@ -264,6 +280,32 @@ public class BinasPortImpl implements BinasPortType {
         }
     }
 
+    private void quorumSetBalance(String email, int points) throws ExecutionException, InterruptedException {
+        long seq = this.seq.getAndIncrement();
+        int i = 0;
+        BinasManager bm = BinasManager.getInstance();
+        List<Response<SetBalanceResponse>> pending = new ArrayList<>();
+        for (StationClient station: bm.findActiveStations()) {
+            System.out.println(String.format("CALL %d (%s) setBalanceAsync: %d, %s, %d", i++, station.getWsURL(), seq, email, points));
+            pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
+        }
+
+        List<SetBalanceResponse> responses = new ArrayList<>();
+        while(responses.size() < pending.size()/2 +1) {
+            responses.clear();
+            Thread.sleep(POLLING_RATE);
+            System.out.println("-----Sleeping-----");
+            i=0;
+            for(Response<SetBalanceResponse> response : pending) {
+                if (response.isDone()) {
+                    System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
+                    responses.add(response.get());
+                }
+                i++;
+            }
+        }
+    }
+
 
     // View helpers ----------------------------------------------------------
 
@@ -296,6 +338,14 @@ public class BinasPortImpl implements BinasPortType {
         svBinas.setTotalReturns(    svBinas.getTotalReturns());
 
         return svBinas;
+    }
+
+    public UserReplica buildUserReplica(long seq, String email, int points) {
+        UserReplica replica = new UserReplica();
+        replica.setEmail(email);
+        replica.setPoints(points);
+        replica.setSeq(seq);
+        return replica;
     }
 
     // Exception helpers -----------------------------------------------------

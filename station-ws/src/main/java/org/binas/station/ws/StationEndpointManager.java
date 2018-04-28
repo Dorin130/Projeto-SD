@@ -44,6 +44,8 @@ public class StationEndpointManager {
 	/** output option */
 	private boolean verbose = true;
 
+	private int lag;
+
 	public boolean isVerbose() {
 		return verbose;
 	}
@@ -53,16 +55,18 @@ public class StationEndpointManager {
 	}
 
 	/** constructor with provided UDDI location, WS name, and WS URL */
-	public StationEndpointManager(String wsName, String wsURL, String uddiURL) {
+	public StationEndpointManager(String wsName, String wsURL, String uddiURL, int lag) {
 		this.uddiURL = uddiURL;
 		this.wsName = wsName;
 		this.wsURL = wsURL;
+		this.lag = lag;
 	}
 
 	/** constructor with provided web service URL */
-	public StationEndpointManager(String wsName, String wsURL) {
+	public StationEndpointManager(String wsName, String wsURL, int lag) {
 		this.wsName = wsName;
 		this.wsURL = wsURL;
+		this.lag = lag;
 	}
 
 	/* end point management */
@@ -86,6 +90,7 @@ public class StationEndpointManager {
 		if(uddiURL != null) {
 			publishToUDDI();			
 		}
+		portImpl.setLag(this.lag);
 	}
 
 	public void awaitConnections() {

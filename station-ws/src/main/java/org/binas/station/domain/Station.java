@@ -1,10 +1,14 @@
 package org.binas.station.domain;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.binas.station.domain.exception.BadInitException;
+import org.binas.station.domain.exception.InvalidUserException;
 import org.binas.station.domain.exception.NoBinaAvailException;
 import org.binas.station.domain.exception.NoSlotAvailException;
+import org.binas.station.ws.UserReplica;
 
 /** Domain Root. */
 public class Station {
@@ -22,6 +26,8 @@ public class Station {
 	private int maxCapacity;
 	/** Bonus for returning bike at this station. */
 	private int bonus;
+	/** Users **/
+	private Map<String, UserReplica> users= new HashMap<>();
 
 	/**
 	 * Global counter of Binas Gets. Uses lock-free thread-safe single variable.
@@ -132,4 +138,12 @@ public class Station {
 		return maxCapacity - freeDocks.get();
 	}
 
+	public void setUser(UserReplica user) {
+		users.put(user.getEmail(), user);
+	}
+
+	public UserReplica getUser(String email) throws InvalidUserException{
+		if(!users.containsKey(email)) throw new InvalidUserException();
+		return users.get(email);
+	}
 }

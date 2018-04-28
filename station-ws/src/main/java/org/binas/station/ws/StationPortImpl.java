@@ -3,6 +3,7 @@ package org.binas.station.ws;
 import org.binas.station.domain.Coordinates;
 import org.binas.station.domain.Station;
 import org.binas.station.domain.exception.BadInitException;
+import org.binas.station.domain.exception.InvalidUserException;
 import org.binas.station.domain.exception.NoBinaAvailException;
 import org.binas.station.domain.exception.NoSlotAvailException;
 
@@ -13,7 +14,7 @@ import javax.jws.WebService;
  * below "map" the Java class to the WSDL definitions.
  */
 @WebService(endpointInterface = "org.binas.station.ws.StationPortType",
-        wsdlLocation = "station.1_0.wsdl",
+        wsdlLocation = "station.2_0.wsdl",
         name ="StationWebService",
         portName = "StationPort",
         targetNamespace="http://ws.station.binas.org/",
@@ -26,6 +27,15 @@ public class StationPortImpl implements StationPortType {
      * lifecycle.
      */
     private StationEndpointManager endpointManager;
+    private int lag;
+
+    private void sleep() {
+        try {
+            Thread.sleep(this.lag);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     /** Constructor receives a reference to the endpoint manager. */
     public StationPortImpl(StationEndpointManager endpointManager) {
@@ -35,8 +45,8 @@ public class StationPortImpl implements StationPortType {
     // Main operations -------------------------------------------------------
 
     /** Retrieve information about station. */
-    @Override
     public StationView getInfo() {
+        sleep();
         Station s = Station.getInstance();
         synchronized(s) {
         	return buildStationView(s);
@@ -46,6 +56,7 @@ public class StationPortImpl implements StationPortType {
     /** Return a bike to the station. */
     @Override
     public int returnBina() throws NoSlotAvail_Exception {
+        sleep();
         Station s = Station.getInstance();
         int result = -1;
         try {
@@ -56,9 +67,31 @@ public class StationPortImpl implements StationPortType {
         return result;
     }
 
+    @Override
+    public UserReplica getBalance(String email) throws InvalidUser_Exception {
+        sleep();
+        Station s = Station.getInstance();
+        UserReplica empty = null;
+        try {
+            s.getUser(email);
+        } catch (InvalidUserException e) {
+            throwInvalidUser("The user is invalid.");
+        }
+        return empty;
+    }
+
+    @Override
+    public void setBalance(UserReplica user) {
+        sleep();
+        Station s = Station.getInstance();
+        s.setUser(user);
+    }
+
+
     /** Take a bike from the station. */
     @Override
     public void getBina() throws NoBinaAvail_Exception {
+        sleep();
         Station s = Station.getInstance();
         try {
             s.getBina();
@@ -67,11 +100,14 @@ public class StationPortImpl implements StationPortType {
         }
     }
 
+
+
     // Test Control operations -----------------------------------------------
 
     /** Diagnostic operation to check if service is running. */
     @Override
     public String testPing(String inputMessage) {
+        sleep();
         // If no input is received, return a default name.
         if (inputMessage == null || inputMessage.trim().length() == 0)
             inputMessage = "friend";
@@ -91,6 +127,7 @@ public class StationPortImpl implements StationPortType {
     /** Return all station variables to default values. */
     @Override
     public void testClear() {
+        sleep();
         Station.getInstance().reset();
     }
 
@@ -98,6 +135,7 @@ public class StationPortImpl implements StationPortType {
     @Override
     public void testInit(int x, int y, int capacity, int returnPrize) throws
             BadInit_Exception {
+        sleep();
         try {
             Station.getInstance().init(x, y, capacity, returnPrize);
         } catch (BadInitException e) {
@@ -146,11 +184,21 @@ public class StationPortImpl implements StationPortType {
         throw new NoSlotAvail_Exception(message, faultInfo);
     }
 
-    //** Helper to throw a new BadInit exception. */
+    /** Helper to throw a new BadInit exception. */
     private void throwBadInit(final String message) throws BadInit_Exception {
         BadInit faultInfo = new BadInit();
         faultInfo.message = message;
         throw new BadInit_Exception(message, faultInfo);
     }
+    /** Helper to throw a new InvalidUser exception. */
+    private void throwInvalidUser(final String message) throws InvalidUser_Exception {
+        InvalidUser faultInfo = new InvalidUser();
+        faultInfo.message = message;
+        throw new InvalidUser_Exception(message, faultInfo);
+    }
 
+
+    public void setLag(int lag) {
+        this.lag = lag;
+    }
 }
