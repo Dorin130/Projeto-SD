@@ -1,12 +1,9 @@
 package org.binas.domain;
 
 import org.binas.domain.exception.*;
-import org.binas.station.ws.NoSlotAvail_Exception;
-import org.binas.station.ws.StationView;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
 import org.binas.station.ws.BadInit_Exception;
-import org.binas.station.ws.NoBinaAvail_Exception;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
@@ -63,7 +60,7 @@ public class BinasManager  {
         return activeStationClients;
 	}
 
-	public StationClient lookupStation(String stationID) {
+	public static StationClient lookupStation(String stationID) {
 		if(stationID == null) return null;
 		StationClient stationClient = null;
 		UDDINaming uddiNaming;
@@ -98,7 +95,7 @@ public class BinasManager  {
 		checkEmail(emailAddress);
 
 		User newUser;
-		synchronized(users) {
+		synchronized(users) { //map.put is harmless if used twice with same email, but second put must throw EmailExistsException
 			if(hasEmail(emailAddress)) throw new EmailExistsException();
 			newUser = new User(emailAddress, false, initialPoints.get());
 			users.put(emailAddress, newUser);
@@ -123,27 +120,12 @@ public class BinasManager  {
 	}
 
 	public void getBina(String stationId, String userEmail)  throws AlreadyHasBinaException,
-			InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
+		InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
 
-			User user = getUser(userEmail);
-			if(user == null) throw new UserNotExistsException();
-			
-			synchronized(user) {
-				if(user.getCredit() < 1) throw new NoCreditException();
-				if(user.hasBina()) throw  new AlreadyHasBinaException();
-				
-				StationClient stationClient = lookupStation(stationId);
-				if(stationClient == null) throw new InvalidStationException();
-				
-				try {
-					stationClient.getBina();
-				} catch (NoBinaAvail_Exception e) {
-					throw new NoBinaAvailException("");
-				}
-				
-				user.setHasBina(true);
-				user.setCredit(user.getCredit()-1);
-			}
+		User user = getUser(userEmail);
+		if(user == null) throw new UserNotExistsException();
+
+		user.getBina(stationId);
 	}
 
 	public void returnBina(String stationId, String userEmail)
@@ -152,24 +134,8 @@ public class BinasManager  {
 		User user = getUser(userEmail);
 		if(user == null) throw new UserNotExistsException();
 		
-		synchronized(user) {
-			if(!user.hasBina()) throw new NoBinaRentedException();
-
-			StationClient stationClient = lookupStation(stationId);
-			if(stationClient == null) throw new InvalidStationException();
-
-			int bonus;
-			try {
-				bonus = stationClient.returnBina();
-			} catch (NoSlotAvail_Exception e) {
-				throw new FullStationException();
-			}
-			
-			user.setHasBina(false);
-			user.setCredit(user.getCredit() + bonus);
-		}
+		user.returnBina(stationId);
 	}
-
 
 	public int getCredit(String userEmail) throws UserNotExistsException {
 		User user = users.get(userEmail);
