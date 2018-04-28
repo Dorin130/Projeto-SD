@@ -38,11 +38,7 @@ import org.binas.station.ws.cli.StationClient;
 )
 public class BinasPortImpl implements BinasPortType {
 
-    /**
-     * Sequence number counter.
-     * **/
-    private final static int POLLING_RATE = 100;
-    private AtomicLong seq = new AtomicLong(0l);
+
 
     /**
      * The Endpoint manager controls the Web Service instance during its whole
@@ -142,7 +138,7 @@ public class BinasPortImpl implements BinasPortType {
         UserView view = null;
         try {
             User user = bm.activateUser(email);
-            quorumSetBalance(email, user.getCredit());
+            bm.quorumSetBalance(email, user.getCredit());
             synchronized(user) {
                 view = buildUserView(user);
             }
@@ -282,76 +278,6 @@ public class BinasPortImpl implements BinasPortType {
         }
     }
 
-    private void quorumSetBalance(String email, int points) throws ExecutionException, InterruptedException {
-        long seq = this.seq.getAndIncrement();
-        int i = 0;
-        BinasManager bm = BinasManager.getInstance();
-        List<Response<SetBalanceResponse>> pending = new ArrayList<>();
-        for (StationClient station: bm.findActiveStations()) {
-            System.out.println(String.format("CALL %d (%s) setBalanceAsync: %d, %s, %d", i++, station.getWsURL(), seq, email, points));
-            pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
-        }
-
-        List<SetBalanceResponse> responses = new ArrayList<>();
-        while(responses.size() < pending.size()/2 +1) {
-            responses.clear();
-            Thread.sleep(POLLING_RATE);
-            System.out.println("-----Sleeping-----");
-            i=0;
-            for(Response<SetBalanceResponse> response : pending) {
-                if (response.isDone()) {
-                    System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
-                    responses.add(response.get());
-                }
-                i++;
-            }
-        }
-    }
-
-    private int quorumGetBalance(String email) throws ExecutionException, InterruptedException {
-        long MaxSeq = -1;
-        int points = -1;
-        int i = 0;
-        BinasManager bm = BinasManager.getInstance();
-        List<Response<GetBalanceResponse>> pending = new ArrayList<>();
-
-        //get all needed responses
-        for (StationClient station: bm.findActiveStations()) {
-            System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
-            pending.add(station.getBalanceAsync(email));
-        }
-        List<GetBalanceResponse> responses = new ArrayList<>();
-        while(responses.size() < pending.size()/2 +1) {
-            responses.clear();
-            Thread.sleep(POLLING_RATE);
-            System.out.println("-----Sleeping-----");
-            i=0;
-            for(Response<GetBalanceResponse> response : pending) {
-                if (response.isDone()) {
-                    System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
-                    responses.add(response.get());
-                }
-                i++;
-            }
-        }
-
-        //Find biggest sequence number
-        long currentSeq;
-        for(GetBalanceResponse response : responses) {
-            currentSeq = response.getReturn().getSeq();
-            if(currentSeq > MaxSeq) {
-                MaxSeq = currentSeq;
-                points = response.getReturn().getPoints();
-            }
-
-        }
-        if(points == -1 || MaxSeq == -1) {
-            //TODO: error handling here or at the function that calls this?
-        }
-        return points;
-
-    }
-
 
     // View helpers ----------------------------------------------------------
 
@@ -384,14 +310,6 @@ public class BinasPortImpl implements BinasPortType {
         svBinas.setTotalReturns(    svBinas.getTotalReturns());
 
         return svBinas;
-    }
-
-    public UserReplica buildUserReplica(long seq, String email, int points) {
-        UserReplica replica = new UserReplica();
-        replica.setEmail(email);
-        replica.setPoints(points);
-        replica.setSeq(seq);
-        return replica;
     }
 
     // Exception helpers -----------------------------------------------------
