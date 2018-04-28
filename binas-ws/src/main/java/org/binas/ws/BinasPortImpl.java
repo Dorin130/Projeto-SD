@@ -19,6 +19,8 @@ import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.domain.exception.*;
+import org.binas.station.ws.GetBalance;
+import org.binas.station.ws.GetBalanceResponse;
 import org.binas.station.ws.SetBalanceResponse;
 import org.binas.station.ws.UserReplica;
 import org.binas.station.ws.cli.StationClient;
@@ -304,6 +306,50 @@ public class BinasPortImpl implements BinasPortType {
                 i++;
             }
         }
+    }
+
+    private int quorumGetBalance(String email) throws ExecutionException, InterruptedException {
+        long MaxSeq = -1;
+        int points = -1;
+        int i = 0;
+        BinasManager bm = BinasManager.getInstance();
+        List<Response<GetBalanceResponse>> pending = new ArrayList<>();
+
+        //get all needed responses
+        for (StationClient station: bm.findActiveStations()) {
+            System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
+            pending.add(station.getBalanceAsync(email));
+        }
+        List<GetBalanceResponse> responses = new ArrayList<>();
+        while(responses.size() < pending.size()/2 +1) {
+            responses.clear();
+            Thread.sleep(POLLING_RATE);
+            System.out.println("-----Sleeping-----");
+            i=0;
+            for(Response<GetBalanceResponse> response : pending) {
+                if (response.isDone()) {
+                    System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
+                    responses.add(response.get());
+                }
+                i++;
+            }
+        }
+
+        //Find biggest sequence number
+        long currentSeq;
+        for(GetBalanceResponse response : responses) {
+            currentSeq = response.getReturn().getSeq();
+            if(currentSeq > MaxSeq) {
+                MaxSeq = currentSeq;
+                points = response.getReturn().getPoints();
+            }
+
+        }
+        if(points == -1 || MaxSeq == -1) {
+            //TODO: error handling here or at the function that calls this?
+        }
+        return points;
+
     }
 
 
