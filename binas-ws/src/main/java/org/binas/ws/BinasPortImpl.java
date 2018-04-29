@@ -137,19 +137,11 @@ public class BinasPortImpl implements BinasPortType {
         BinasManager bm = BinasManager.getInstance();
         UserView view = null;
         try {
-            User user = bm.activateUser(email);
-            bm.quorumSetBalance(email, user.getCredit());
-            synchronized(user) {
-                view = buildUserView(user);
-            }
+            view = bm.activateUser(email);
         } catch (EmailExistsException e) {
             throwEmailExists("This email is already in use");
         } catch (InvalidEmailException e) {
             throwInvalidEmail("This email is invalid");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
         }
         return view;
     }
@@ -280,15 +272,6 @@ public class BinasPortImpl implements BinasPortType {
 
 
     // View helpers ----------------------------------------------------------
-
-    /** Helper to convert user to a user view. */
-    private UserView buildUserView(User user) {
-    	UserView userView = new UserView();
-    	userView.setEmail(user.getEmail());
-    	userView.setHasBina(user.hasBina());
-    	userView.setCredit(user.getCredit());
-        return userView;
-    }
 
     /** Helper to convert StationClient to a station view. */
     public StationView buildStationView(StationClient stationClient) {

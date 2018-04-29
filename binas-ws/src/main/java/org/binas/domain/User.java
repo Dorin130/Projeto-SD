@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class User {
 
-    private String email;
-    private AtomicBoolean hasBina;
-    private AtomicInteger credit;
+    private final String email;
+    private final AtomicBoolean hasBina;
+    private final AtomicInteger credit; //"cached"
 
     public User(String email, boolean hasBina, int credit) {
         this.email = email;
@@ -24,34 +24,27 @@ public class User {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public boolean hasBina() {
         return hasBina.get();
     }
 
     public void setHasBina(boolean hasBina) {
         this.hasBina.set(hasBina);
-    }
+    } //for testing
 
     public int getCredit() {
         return credit.get();
     }
 
-    public void setCredit(int credit) {
-        this.credit.set(credit);
-    }
-
     //TODO: Ask teacher about double synchronized here (synchronized(credit) {synchronized(hasBina) {} } )
-    public synchronized void getBina(String stationId)  throws AlreadyHasBinaException,
-        InvalidStationException, NoBinaAvailException, NoCreditException {
+    synchronized void getBina(String stationId)  throws AlreadyHasBinaException,
+            InvalidStationException, NoBinaAvailException, NoCreditException {
 
         if(getCredit() < 1) throw new NoCreditException();
         if(hasBina()) throw  new AlreadyHasBinaException();
 
-        StationClient stationClient = BinasManager.lookupStation(stationId);
+        BinasManager bm = BinasManager.getInstance();
+        StationClient stationClient = bm.lookupStation(stationId);
         if(stationClient == null) throw new InvalidStationException();
 
         try {
@@ -60,16 +53,25 @@ public class User {
             throw new NoBinaAvailException("");
         }
 
-        this.credit.decrementAndGet();
+        synchronized (credit) {
+            try {
+                bm.quorumSetBalance(getEmail(), getCredit() - 1);
+            } catch (InterruptedException ie) {
+                System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
+                Thread.currentThread().interrupt(); //TODO: check this (we should respond to binas-cli)
+            }
+            this.credit.decrementAndGet();
+        }
         setHasBina(true);
     }
 
-    public synchronized void returnBina(String stationId)
-        throws FullStationException, InvalidStationException, NoBinaRentedException {
+    synchronized void returnBina(String stationId) throws FullStationException,
+            InvalidStationException, NoBinaRentedException {
 
         if(!hasBina()) throw new NoBinaRentedException();
 
-        StationClient stationClient = BinasManager.lookupStation(stationId);
+        BinasManager bm = BinasManager.getInstance();
+        StationClient stationClient = bm.lookupStation(stationId);
         if(stationClient == null) throw new InvalidStationException();
 
         int bonus;
@@ -78,8 +80,15 @@ public class User {
         } catch (NoSlotAvail_Exception e) {
             throw new FullStationException();
         }
-
-        this.credit.addAndGet(bonus);
+        synchronized (credit) {
+            try {
+                bm.quorumSetBalance(getEmail(), getCredit() + bonus);
+            } catch (InterruptedException ie) {
+                System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
+                Thread.currentThread().interrupt(); //TODO: check this (we should respond to binas-cli)
+            }
+            this.credit.addAndGet(bonus);
+        }
         setHasBina(false);
     }
 }

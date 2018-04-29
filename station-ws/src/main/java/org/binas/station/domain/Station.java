@@ -138,8 +138,9 @@ public class Station {
 		return maxCapacity - freeDocks.get();
 	}
 
-	public void setUser(UserReplica user) {
-		users.put(user.getEmail(), user);
+	public void setUser(UserReplica user) { //TODO: verify synchronization
+		if(user.getSeq() > users.get(user.getEmail()).getSeq())
+			users.put(user.getEmail(), user);
 	}
 
 	public UserReplica getUser(String email) throws InvalidUserException{
