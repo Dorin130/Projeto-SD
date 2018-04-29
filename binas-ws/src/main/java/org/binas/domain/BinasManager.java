@@ -1,12 +1,9 @@
 package org.binas.domain;
 
 import org.binas.domain.exception.*;
-import org.binas.station.ws.GetBalanceResponse;
-import org.binas.station.ws.SetBalanceResponse;
-import org.binas.station.ws.UserReplica;
+import org.binas.station.ws.*;
 import org.binas.station.ws.cli.StationClient;
 import org.binas.station.ws.cli.StationClientException;
-import org.binas.station.ws.BadInit_Exception;
 import org.binas.ws.UserNotExists;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
@@ -115,19 +112,22 @@ public class BinasManager  {
 	public User activateUser(String emailAddress, int points) throws EmailExistsException, InvalidEmailException {
 		checkEmail(emailAddress);
 
-		User newUser;
 		synchronized(users) { //map.put is harmless if used twice with same email, but second put must throw EmailExistsException
 			if(hasEmail(emailAddress)) throw new EmailExistsException();
             try { //Binas Manager might have crashed, need to check stations to confirm that user doesn't exist
                 quorumGetBalance(emailAddress);
                 throw new EmailExistsException();
+
             } catch (UserNotExistsException unee) {
-                newUser = new User(emailAddress, false, points);
+               User newUser = new User(emailAddress, false, points);
                 users.put(emailAddress, newUser);
-            }
+                return newUser;
+            } catch (InterruptedException e) {
+				System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
+				Thread.currentThread().interrupt();
+			}
 		}
-		
-		return newUser;
+		return null;
 	}
 	
 	private void checkEmail(String email) throws InvalidEmailException {
@@ -141,11 +141,21 @@ public class BinasManager  {
 		return users.containsKey(email);
 	}
 	
-	public User getUser(String email) throws UserNotExistsException {
+	public User getUser(String email) {
         User user = users.get(email);
         if(user == null) {
-            int val = quorumGetBalance(email);
-            user = new User(email, false, val); //BinasManager Crashed and user exists in stations
+			int val = 0;
+
+			try {
+				val = quorumGetBalance(email);
+			} catch (UserNotExistsException e) { //catching it here so that it is more explicit
+				return null; //User doesn't exist in BinasManager and isn't replicated in the stations
+			} catch (InterruptedException e) {
+				System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
+				Thread.currentThread().interrupt();
+			}
+
+			user = new User(email, false, val); //BinasManager Crashed and user exists in stations
             users.put(email, user);
         }
 	    return user;
@@ -155,7 +165,7 @@ public class BinasManager  {
 		InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
 
 		User user = getUser(userEmail);
-		//if(user == null) throw new UserNotExistsException();    //unnecessary, covered by getUser, --> TODO: CHECK IF THIS IS REALLY THE CASE
+		if(user == null) throw  new UserNotExistsException(); //It is more explicit to catch the exception here than to let it propagate
 
 		user.getBina(stationId);
 	}
@@ -164,7 +174,7 @@ public class BinasManager  {
             InvalidStationException, NoBinaRentedException, UserNotExistsException {
 
 		User user = getUser(userEmail);
-		//if(user == null) throw new UserNotExistsException();    //unnecessary, covered by getUser, --> TODO: CHECK IF THIS IS REALLY THE CASE
+		if(user == null) throw new UserNotExistsException();
 		
 		user.returnBina(stationId);
 	}
@@ -215,70 +225,89 @@ public class BinasManager  {
 		return replica;
 	}
 
-	public void quorumSetBalance(String email, int points) throws ExecutionException, InterruptedException {
+
+
+	/* - -Throws interruptedException because when this exception occurs it means someone is trying to end the execution,
+	 (e.g ctrl + c) therefore it is a bad idea to catch it here.
+	 - - No need to verify if the user doesn't exist, this is a set
+	 */
+	public void quorumSetBalance(String email, int points) throws InterruptedException { //TODO verify if it is best to throw  this exception or to handle it above
 		long seq = this.seq.getAndIncrement();
 		int i = 0;
-		BinasManager bm = BinasManager.getInstance();
 		List<Response<SetBalanceResponse>> pending = new ArrayList<>();
-		for (StationClient station: bm.findActiveStations()) {
+		Set<SetBalanceResponse> goodResponses = new HashSet<>(); //TODO ask Manel why he changed from List to Set?
+
+
+		//Calling the setBalanceAsync method in all the stations
+		ArrayList<StationClient> activeStations = findActiveStations();
+		for (StationClient station: activeStations) {
 			System.out.println(String.format("CALL %d (%s) setBalanceAsync: %d, %s, %d", i++, station.getWsURL(), seq, email, points));
-			pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
+			pending.add(0, station.setBalanceAsync(buildUserReplica(seq, email, points)));
 		}
 
-		Set<SetBalanceResponse> goodResponses = new HashSet<>();
-		while(goodResponses.size() < NUM_STATIONS/2 +1) {
-            System.out.println("-----Sleeping-----");
-            Thread.sleep(POLLING_RATE);
-			i=0;
-			for(Response<SetBalanceResponse> response : pending) {
-				if (response.isDone()) {
-					System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
-                    goodResponses.add(response.get());
+		//Pooling for all responses
+		while(goodResponses.size() < NUM_STATIONS/2 + 1) {
+			System.out.println("-----Sleeping-----");
+			Thread.sleep(POLLING_RATE);
+
+			for(i=pending.size(); i > 0 ; i--) {
+				Response<SetBalanceResponse> response = pending.get(i);
+				if(response.isDone()) {
+					try {
+						SetBalanceResponse result = response.get();
+						pending.remove(i); //don't want to get the response from this one again
+					} catch (ExecutionException e) {
+						System.out.println("Unknown exception occured"); //this only happens if one exception like WStimeout happens
+					}
 				}
-				i++;
 			}
 		}
+
 	}
 
-	public int quorumGetBalance(String email) throws UserNotExistsException {
+	public int quorumGetBalance(String email) throws UserNotExistsException, InterruptedException {
 		long MaxSeq = -1;
 		int points = -1;
 		int i = 0;
 		BinasManager bm = BinasManager.getInstance();
 		List<Response<GetBalanceResponse>> pending = new ArrayList<>();
+		Set<GetBalanceResponse> goodResponses = new HashSet<>();
+
 
 		//get all needed responses
 		for (StationClient station: bm.findActiveStations()) {
 			System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
-			pending.add(station.getBalanceAsync(email));
+			pending.add(0, station.getBalanceAsync(email));
 		}
 
-        int responsesNo = 0;
-        Set<GetBalanceResponse> goodResponses = new HashSet<>();
-		while(goodResponses.size() < NUM_STATIONS/2 +1) {
-		    if(responsesNo == pending.size())
-		        throw new UserNotExistsException(); //Only possible reason is 2 or more InvalidUser_Exception
-            System.out.println("-----Sleeping-----");
-            try {
-                Thread.sleep(POLLING_RATE);
-            } catch (InterruptedException ie) {
-                System.out.println("Thread was interrupted while sleeping");
-            }
-			i = 0; responsesNo = 0;
+
+		//Pooling for all responses
+		int responsesNo = 0;
+		int pendingInitialSize = pending.size();
+
+		while(goodResponses.size() < NUM_STATIONS/2 + 1) {
+			//Only possible reason is 2 or more InvalidUser_Exception
+			if(responsesNo == pendingInitialSize) { throw new UserNotExistsException(); }
+
+			System.out.println("-----Sleeping-----");
+			Thread.sleep(POLLING_RATE);
+			i=0;
 			for(Response<GetBalanceResponse> response : pending) {
-				if (response.isDone()) {
-				    try{
-				        goodResponses.add(response.get());
-                        System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
-                        responsesNo++;
-                    } catch (ExecutionException ee) {
-                        System.out.println(String.format("RESPONSE %d setBalanceAsync: Exception thrown", i));
-                        responsesNo++;
-                    } catch (InterruptedException ie) {
-                        System.out.println(String.format("RESPONSE %d setBalanceAsync: Thread Interrupted", i));
-                        /*responsesNo++; does is keep throwing interrupted exception?
-                        if so then responsesNo++, else try again like it is doing*/
-                    }
+				if(response.isDone()) {
+					try {
+						GetBalanceResponse result = response.get();
+						System.out.println(String.format("RESPONSE %d setBalanceAsync: OK", i));
+						responsesNo++;
+
+					} catch (ExecutionException e) {
+						if(e.getCause() instanceof InvalidUser_Exception) {
+							System.out.println(String.format("RESPONSE %d setBalanceAsync: Invalid User exception thrown", i));
+							responsesNo++;
+						}//Valid answer, station might not know about the user
+						else { System.out.println("Unknown exception occured"); }//Other exception occurred (e.g WS timeout)
+					}
+					pending.remove(response); //don't want to get the response from this one again
+					i--;
 				}
 				i++;
 			}
@@ -294,9 +323,6 @@ public class BinasManager  {
 			}
 		}
 
-		if(points == -1 || MaxSeq == -1) {
-			//TODO: error handling here or at the function that calls this?
-		}
 		return points;
 
 	}
