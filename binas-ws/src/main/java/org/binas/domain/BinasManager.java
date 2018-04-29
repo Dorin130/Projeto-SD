@@ -242,24 +242,25 @@ public class BinasManager  {
 		ArrayList<StationClient> activeStations = findActiveStations();
 		for (StationClient station: activeStations) {
 			System.out.println(String.format("CALL %d (%s) setBalanceAsync: %d, %s, %d", i++, station.getWsURL(), seq, email, points));
-			pending.add(0, station.setBalanceAsync(buildUserReplica(seq, email, points)));
+			pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
 		}
 
 		//Pooling for all responses
 		while(goodResponses.size() < NUM_STATIONS/2 + 1) {
 			System.out.println("-----Sleeping-----");
 			Thread.sleep(POLLING_RATE);
-
-			for(i=pending.size(); i > 0 ; i--) {
-				Response<SetBalanceResponse> response = pending.get(i);
+			i=0;
+			for(Response<SetBalanceResponse> response : pending) {
 				if(response.isDone()) {
 					try {
 						SetBalanceResponse result = response.get();
-						pending.remove(i); //don't want to get the response from this one again
 					} catch (ExecutionException e) {
 						System.out.println("Unknown exception occured"); //this only happens if one exception like WStimeout happens
 					}
+					pending.remove(i); //don't want to get the response from this one again
+					i--;
 				}
+				i++;
 			}
 		}
 
@@ -277,7 +278,7 @@ public class BinasManager  {
 		//get all needed responses
 		for (StationClient station: bm.findActiveStations()) {
 			System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
-			pending.add(0, station.getBalanceAsync(email));
+			pending.add(station.getBalanceAsync(email));
 		}
 
 
