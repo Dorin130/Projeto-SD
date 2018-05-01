@@ -1,7 +1,7 @@
 package org.binas.station.domain;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.binas.station.domain.exception.BadInitException;
@@ -27,7 +27,7 @@ public class Station {
 	/** Bonus for returning bike at this station. */
 	private int bonus;
 	/** Users **/
-	private Map<String, UserReplica> users= new HashMap<>();
+	private Map<String, UserReplica> users= new ConcurrentHashMap<>();
 
 	/**
 	 * Global counter of Binas Gets. Uses lock-free thread-safe single variable.
@@ -74,6 +74,8 @@ public class Station {
 
 		totalGets.set(0);
 		totalReturns.set(0);
+
+		users.clear();
 	}
 
 	public void setId(String id) {
@@ -139,12 +141,20 @@ public class Station {
 	}
 
 	public void setUser(UserReplica user) { //TODO: verify synchronization
-		if(user.getSeq() > users.get(user.getEmail()).getSeq())
-			users.put(user.getEmail(), user);
+		users.putIfAbsent(user.getEmail(), user);
+		UserReplica stationUser = users.get(user.getEmail());
+		synchronized (stationUser) {
+			if(user.getSeq() > users.get(user.getEmail()).getSeq())
+				users.put(user.getEmail(), user);
+			else
+			    System.out.println("Old Seq number, ignoring...");
+
+		}
 	}
 
 	public UserReplica getUser(String email) throws InvalidUserException{
 		if(!users.containsKey(email)) throw new InvalidUserException();
+
 		return users.get(email);
 	}
 }

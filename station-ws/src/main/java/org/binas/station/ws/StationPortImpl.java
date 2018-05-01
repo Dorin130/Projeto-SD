@@ -69,22 +69,27 @@ public class StationPortImpl implements StationPortType {
 
     @Override
     public UserReplica getBalance(String email) throws InvalidUser_Exception {
+        System.out.println(String.format("CALL getBalance (%s)", email));
         sleep();
         Station s = Station.getInstance();
-        UserReplica empty = null;
+        UserReplica user = null;
         try {
-            s.getUser(email);
+            user = s.getUser(email);
         } catch (InvalidUserException e) {
+            System.out.println(String.format("RETURN getBalance InvalidUser_Exception"));
             throwInvalidUser("The user is invalid.");
         }
-        return empty;
+        System.out.println(String.format("RETURN getBalance (%d, %s, %d)", user.getSeq(), user.getEmail(), user.getPoints()));
+        return user;
     }
 
     @Override
     public void setBalance(UserReplica user) {
+        System.out.println(String.format("CALL setBalance (%d, %s, %d)", user.getSeq(), user.getEmail(), user.getPoints()));
         sleep();
         Station s = Station.getInstance();
         s.setUser(user);
+        System.out.println(String.format("RETURN setBalance (void)"));
     }
 
 

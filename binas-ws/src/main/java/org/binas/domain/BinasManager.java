@@ -9,6 +9,7 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
 import javax.xml.ws.Response;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,8 +58,16 @@ public class BinasManager  {
 		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
 		UDDINaming uddiNaming;
 		try {
-			uddiNaming = new UDDINaming(uddiURL);
-			Collection<String> wsURLs = uddiNaming.list(wsName+"%");
+			Collection<String> wsURLs;
+			try {
+				uddiNaming = new UDDINaming(uddiURL);
+				wsURLs = uddiNaming.list(wsName + "%");
+			} catch (UDDINamingException ue) {
+				sleep(100);
+				System.out.println("PREVENTED");
+				uddiNaming = new UDDINaming(uddiURL);
+				wsURLs = uddiNaming.list(wsName + "%");
+			}
 			for(String wsURL : wsURLs) {
 				activeStationClients.add(new StationClient(wsURL));
 			}
@@ -67,7 +76,17 @@ public class BinasManager  {
 		} catch (StationClientException e) {
 			System.err.println("findActiveStations: error creating station client");
 		}
+
         return activeStationClients;
+	}
+
+	private void sleep(int milis) {
+		try {
+			Thread.sleep(milis);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	public StationClient lookupStation(String stationID) {
@@ -76,7 +95,16 @@ public class BinasManager  {
 		UDDINaming uddiNaming;
 		try {
 			uddiNaming = new UDDINaming(uddiURL);
-			String wsURL = uddiNaming.lookup(stationID);
+			String wsURL;
+			try {
+				uddiNaming = new UDDINaming(uddiURL);
+				wsURL = uddiNaming.lookup(stationID);
+			} catch (UDDINamingException ue) {
+				sleep(100);
+				System.out.println("PREVENTED");
+				uddiNaming = new UDDINaming(uddiURL);
+				wsURL = uddiNaming.lookup(stationID);
+			}
 			if(wsURL == null) return null;
 			stationClient = new StationClient(wsURL);
 		} catch (UDDINamingException e) {
@@ -216,6 +244,7 @@ public class BinasManager  {
 	public void testClear() {
 		synchronized (users) {
 		    users.clear();
+		    seq.set(0);
         }
         for (StationClient stationClient: findActiveStations()) {
 			stationClient.testClear();
@@ -238,35 +267,31 @@ public class BinasManager  {
 	 */
 	public void quorumSetBalance(String email, int points) throws InterruptedException { //TODO verify if it is best to throw  this exception or to handle it above
 		long seq = this.seq.getAndIncrement();
-		int i = 0;
 		List<Response<SetBalanceResponse>> pending = new ArrayList<>();
-		Set<SetBalanceResponse> goodResponses = new HashSet<>();
+		Set<Response<SetBalanceResponse>> doneResponses = new HashSet<>();
 
 
 		//Calling the setBalanceAsync method in all the stations
 		ArrayList<StationClient> activeStations = findActiveStations();
 		for (StationClient station: activeStations) {
-			System.out.println(String.format("CALL %d (%s) setBalanceAsync: %d, %s, %d", i++, station.getWsURL(), seq, email, points));
+			System.out.println(String.format("CALL(%s) setBalanceAsync: %d, %s, %d", station.getWsURL(), seq, email, points));
 			pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
 		}
 
+
+
 		//Pooling for all responses
-		while(goodResponses.size() < NUM_STATIONS/2 + 1) {
-			System.out.println("-----Sleeping-----");
+		while(doneResponses.size() < NUM_STATIONS/2 + 1) {
 			Thread.sleep(POLLING_RATE);
-			i=0;
 			for(Response<SetBalanceResponse> response : pending) {
 				if(response.isDone()) {
-					try {
-						goodResponses.add(response.get());
-					} catch (ExecutionException e) {
-						System.out.println("Unknown exception occured"); //this only happens if one exception like WStimeout happens
-					}
-					pending.remove(i); //don't want to get the response from this one again
-					i--;
+					doneResponses.add(response);
 				}
-				i++;
 			}
+		}
+
+		for(int i = 0; i < doneResponses.size(); i++) {
+			System.out.println("RESPONSE setBalanceAsync: OK");
 		}
 
 	}
@@ -277,57 +302,64 @@ public class BinasManager  {
 		int i = 0;
 
 		//get all needed responses
-		for (StationClient station: bm.findActiveStations()) {
+		List<StationClient> stationClients = bm.findActiveStations();
+
+		if(stationClients.size() < NUM_STATIONS/2 + 1) {
+			System.out.println("Not enough stations up for majority quorum");
+			throw new InterruptedException();
+		}
+
+		for (StationClient station: stationClients) {
 			System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
 			pending.add(station.getBalanceAsync(email));
 		}
 
 		//Polling for all responses
 
-		int responsesDone = 0;
-		int notExistsResponses = 0;
-		Set<GetBalanceResponse> goodResponses = new HashSet<>();
+		Set<Response<GetBalanceResponse>> doneResponses = new HashSet<>();
 
-		int pendingInitialSize = pending.size();
-
-		while(goodResponses.size() < NUM_STATIONS/2 + 1 && notExistsResponses < NUM_STATIONS/2 + 1) {
+		while(doneResponses.size() < NUM_STATIONS/2 + 1) {
 			//Only possible reason is 2 or more InvalidUser_Exception
-			if(responsesDone == pendingInitialSize) { throw new InterruptedException(); } //No quorum with valid answers/exceptions
-
-			System.out.println("-----Sleeping-----");
 			Thread.sleep(POLLING_RATE);
 			for(Response<GetBalanceResponse> response : pending) {
 				if(response.isDone()) {
-					try {
-						goodResponses.add(response.get());
-						responsesDone++;
-						System.out.println("RESPONSE setBalanceAsync: OK");
-
-					} catch (ExecutionException e) {
-						if(e.getCause() instanceof InvalidUser_Exception) { //Valid answer, station might not know about the user
-							notExistsResponses++;
-							responsesDone++;
-							System.out.println("RESPONSE setBalanceAsync: Invalid User exception thrown");
-						}
-						else { System.out.println("Unknown exception occured"); }//Other exception occurred (e.g WS timeout)
-					}
-					pending.remove(response); //don't want to get the response from this one again
+					doneResponses.add(response);
 				}
 			}
 		}
 
-		if (notExistsResponses >= NUM_STATIONS/2 + 1)
-		    throw new UserNotExistsException();
+		Set<GetBalanceResponse> goodResponses = new HashSet<>();
+
+		for(Response<GetBalanceResponse> response: doneResponses) {
+			try {
+				goodResponses.add(response.get());
+				System.out.println("RESPONSE getBalanceAsync: OK");
+			} catch (ExecutionException e) {
+				if(e.getCause() instanceof InvalidUser_Exception) { //Valid answer, station might not know about the user
+					System.out.println("RESPONSE getBalanceAsync: Invalid User");
+				}
+			}
+		}
 
 		UserReplica freshestReplica = goodResponses.stream().map(GetBalanceResponse::getReturn)
-				.max(Comparator.comparing(UserReplica::getSeq)).orElse(new UserReplica());
+				.max(Comparator.comparing(UserReplica::getSeq)).orElseThrow( () -> new UserNotExistsException() );
 
 		//attempt to make quorum work with global seq. TODO: check if correct
-		seq.accumulateAndGet(freshestReplica.getSeq(), Long::max); //updates to biggest value (only updates if BM had crashed
+		seq.accumulateAndGet(freshestReplica.getSeq()+1, Long::max); //updates to biggest value (only updates if BM had crashed
 
 		return freshestReplica.getPoints();
 	}
 
+
+	/*
+	* 					} catch (ExecutionException e) {
+						if(e.getCause() instanceof InvalidUser_Exception) { //Valid answer, station might not know about the user
+							doneResponses.add(response);
+							System.out.println("RESPONSE setBalanceAsync: Invalid User exception thrown");
+						}
+						else { System.out.println("Unknown exception occured"); }//Other exception occurred (e.g WS timeout)
+					}
+	* */
     // View helpers ----------------------------------------------------------
 
     /** Helper to convert user to a user view. */

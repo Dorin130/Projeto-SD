@@ -18,13 +18,13 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 
 		<mainclass>org.binas.ws.BinasApp</mainclass>
-		<!--<uddi.user>a17</uddi.user>
+		<uddi.user>a17</uddi.user>
 		<uddi.pass>3VRki4z</uddi.pass>
-		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>-->
+		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
 
-		<uddi.user>uddiadmin</uddi.user>
+		<!-- <uddi.user>uddiadmin</uddi.user>
 		<uddi.pass>da_password1</uddi.pass>
-		<uddi.url>http://localhost:9090/</uddi.url>
+		<uddi.url>http://localhost:9090/</uddi.url> -->
 
 		<group.id>A17</group.id>
 
