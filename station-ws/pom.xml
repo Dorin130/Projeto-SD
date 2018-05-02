@@ -29,7 +29,12 @@
 		<uddi.user>a17</uddi.user>
 		<uddi.pass>3VRki4z</uddi.pass>
 		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
+		<!-- <uddi.user>uddiadmin</uddi.user>
+		<uddi.pass>da_password1</uddi.pass>
+		<uddi.url>http://localhost:9090/</uddi.url> -->
 		<ws.name>A17_Station${ws.i}</ws.name>
+
+		<lag>100</lag>
 
 	</properties>
 
@@ -105,6 +110,7 @@
 						<argument>${ws.name}</argument>
 						<argument>${ws.url}</argument>
 						<argument>${uddi.url}</argument>
+						<argument>${lag}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

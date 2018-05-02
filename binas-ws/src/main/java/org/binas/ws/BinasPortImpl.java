@@ -2,10 +2,8 @@ package org.binas.ws;
 
 import org.binas.domain.BinasManager;
 import org.binas.domain.CoordinatesComparator;
-import org.binas.domain.User;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import javax.jws.WebService;
 
@@ -17,6 +15,7 @@ import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.domain.exception.*;
+
 import org.binas.station.ws.cli.StationClient;
 
 /**
@@ -31,6 +30,8 @@ import org.binas.station.ws.cli.StationClient;
         serviceName = "BinasService"
 )
 public class BinasPortImpl implements BinasPortType {
+
+
 
     /**
      * The Endpoint manager controls the Web Service instance during its whole
@@ -54,7 +55,7 @@ public class BinasPortImpl implements BinasPortType {
      */
     @Override
     public List<StationView> listStations(Integer numberOfStations, CoordinatesView coordinates) {
-    	if(numberOfStations < 0)
+    	if(numberOfStations == null || numberOfStations < 0 || coordinates == null)
     		return new ArrayList<StationView>(0);
     	
         BinasManager bm = BinasManager.getInstance();
@@ -124,20 +125,18 @@ public class BinasPortImpl implements BinasPortType {
      * @throws EmailExists_Exception
      * @throws InvalidEmail_Exception
      */
+
     public UserView activateUser(String email) throws EmailExists_Exception, InvalidEmail_Exception {
-    	BinasManager bm = BinasManager.getInstance();
-    	UserView view = null;
-    	try {
-        	User user = bm.activateUser(email);
-        	synchronized(user) {
-            	view = buildUserView(user);
-        	}
-    	} catch (EmailExistsException e) {
-    		throwEmailExists("This email is already in use");
-    	} catch (InvalidEmailException e) {
-    		throwInvalidEmail("This email is invalid");
-    	}
-    	return view;
+        BinasManager bm = BinasManager.getInstance();
+        UserView view = null;
+        try {
+            view = bm.activateUser(email);
+        } catch (EmailExistsException e) {
+            throwEmailExists("This email is already in use");
+        } catch (InvalidEmailException e) {
+            throwInvalidEmail("This email is invalid");
+        }
+        return view;
     }
 
 	/**
@@ -266,15 +265,6 @@ public class BinasPortImpl implements BinasPortType {
 
 
     // View helpers ----------------------------------------------------------
-
-    /** Helper to convert user to a user view. */
-    private UserView buildUserView(User user) {
-    	UserView userView = new UserView();
-    	userView.setEmail(user.getEmail());
-    	userView.setHasBina(user.hasBina());
-    	userView.setCredit(user.getCredit());
-        return userView;
-    }
 
     /** Helper to convert StationClient to a station view. */
     public StationView buildStationView(StationClient stationClient) {

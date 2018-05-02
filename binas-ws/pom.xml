@@ -21,6 +21,11 @@
 		<uddi.user>a17</uddi.user>
 		<uddi.pass>3VRki4z</uddi.pass>
 		<uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
+
+		<!-- <uddi.user>uddiadmin</uddi.user>
+		<uddi.pass>da_password1</uddi.pass>
+		<uddi.url>http://localhost:9090/</uddi.url> -->
+
 		<group.id>A17</group.id>
 
 		<ws.name>${group.id}_Binas</ws.name>
@@ -104,6 +109,9 @@
 					<!-- to prevent deprecation warning: -->
 					<killAfter>-1</killAfter>
 					<mainClass>${mainclass}</mainClass>
+					<!-- If this is false, maven does nothing about the daemon threads.
+					When maven has no more work to do, the VM will normally terminate any remaining daemon threads. -->
+					<cleanupDaemonThreads>false</cleanupDaemonThreads>
 					<arguments>
 						<argument>${ws.name}</argument>
 						<argument>${ws.url}</argument>
