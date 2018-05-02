@@ -79,6 +79,7 @@ public class BinasClientApp {
 
         System.out.println("Please restart binas and press ENTER");
         System.in.read();
+        System.in.read();
         System.out.println("-----------Iteration 3----------");
         run(client);
 

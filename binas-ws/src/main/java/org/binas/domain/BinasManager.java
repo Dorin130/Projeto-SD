@@ -172,7 +172,7 @@ public class BinasManager  {
 				throw une;
 			}
 			//BinasManager crashed and user exists in stations
-			user = new User(email, false, freshestReplica.getPoints(), freshestReplica.getSeq());
+			user = new User(email, false, freshestReplica.getPoints(), freshestReplica.getSeq()+1);
             users.put(email, user);
         }
 	    return user;
