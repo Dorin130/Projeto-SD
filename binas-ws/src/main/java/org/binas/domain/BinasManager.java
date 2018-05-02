@@ -9,7 +9,6 @@ import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINaming;
 import pt.ulisboa.tecnico.sdis.ws.uddi.UDDINamingException;
 
 import javax.xml.ws.Response;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +29,7 @@ public class BinasManager  {
 	private final static int POLLING_RATE = 100;
 	private AtomicLong seq = new AtomicLong(0l);
 
-	private final static int NUM_STATIONS = 3;
+	private final static int NUM_STATIONS = 3; //MUST BE int
 
 	/**
 	 * Sequence number counter.
@@ -43,7 +42,6 @@ public class BinasManager  {
 		String mailSep = "@";
 		String EMAIL_PATTERN =	name + mailSep + name;
 		this.emailPattern = Pattern.compile(EMAIL_PATTERN); //used to validate user emails
-
 	}
 
 	/**
@@ -52,67 +50,6 @@ public class BinasManager  {
 	 */
 	private static class SingletonHolder {
 		private static final BinasManager INSTANCE = new BinasManager();
-	}
-
-	public ArrayList<StationClient> findActiveStations() {
-		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
-		UDDINaming uddiNaming;
-		try {
-			Collection<String> wsURLs;
-			try {
-				uddiNaming = new UDDINaming(uddiURL);
-				wsURLs = uddiNaming.list(wsName + "%");
-			} catch (UDDINamingException ue) {
-				sleep(100);
-				System.out.println("PREVENTED");
-				uddiNaming = new UDDINaming(uddiURL);
-				wsURLs = uddiNaming.list(wsName + "%");
-			}
-			for(String wsURL : wsURLs) {
-				activeStationClients.add(new StationClient(wsURL));
-			}
-		} catch (UDDINamingException e) {
-			System.err.println("findActiveStations: UDDINaming Error");
-		} catch (StationClientException e) {
-			System.err.println("findActiveStations: error creating station client");
-		}
-
-        return activeStationClients;
-	}
-
-	private void sleep(int milis) {
-		try {
-			Thread.sleep(milis);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Thread.currentThread().interrupt();
-		}
-	}
-
-	public StationClient lookupStation(String stationID) {
-		if(stationID == null) return null;
-		StationClient stationClient = null;
-		UDDINaming uddiNaming;
-		try {
-			uddiNaming = new UDDINaming(uddiURL);
-			String wsURL;
-			try {
-				uddiNaming = new UDDINaming(uddiURL);
-				wsURL = uddiNaming.lookup(stationID);
-			} catch (UDDINamingException ue) {
-				sleep(100);
-				System.out.println("PREVENTED");
-				uddiNaming = new UDDINaming(uddiURL);
-				wsURL = uddiNaming.lookup(stationID);
-			}
-			if(wsURL == null) return null;
-			stationClient = new StationClient(wsURL);
-		} catch (UDDINamingException e) {
-			System.err.println("findActiveStations: UDDINaming Error");
-		} catch (StationClientException e) {
-			System.err.println("findActiveStations: error creating station client");
-		}
-		return stationClient;
 	}
 
 	public static synchronized BinasManager getInstance() {
@@ -129,37 +66,87 @@ public class BinasManager  {
 			this.uddiURL = uddiURL;
 	}
 
+
+	public ArrayList<StationClient> findActiveStations() {
+		ArrayList<StationClient> activeStationClients = new ArrayList<StationClient>();
+		UDDINaming uddiNaming;
+		try {
+			Collection<String> wsURLs;
+			uddiNaming = new UDDINaming(uddiURL);
+			wsURLs = uddiNaming.list(wsName + "%");
+			for(String wsURL : wsURLs) {
+				activeStationClients.add(new StationClient(wsURL));
+			}
+		} catch (UDDINamingException e) {
+			System.err.println("findActiveStations: UDDINaming Error");
+			return null;
+		} catch (StationClientException e) {
+			System.err.println("findActiveStations: error creating station client");
+			return null;
+		}
+
+        return activeStationClients;
+	}
+
+	public StationClient lookupStation(String stationID) {
+		if(stationID == null) return null;
+		StationClient stationClient = null;
+		UDDINaming uddiNaming;
+		try {
+			uddiNaming = new UDDINaming(uddiURL);
+			String wsURL = uddiNaming.lookup(stationID);
+			if(wsURL == null) return null;
+			stationClient = new StationClient(wsURL);
+		} catch (UDDINamingException e) {
+			System.err.println("findActiveStations: UDDINaming Error");
+		} catch (StationClientException e) {
+			System.err.println("findActiveStations: error creating station client");
+		}
+		return stationClient;
+	}
+
+	/**
+	 * Creates a local user if it doesn't exist already, checking for replicated versions
+	 * Ensures that new user data is replicated (write quorum to stations)
+	 * @param emailAddress
+	 * @return a UserView of the user
+	 * @throws EmailExistsException
+	 * @throws InvalidEmailException
+	 */
     public UserView activateUser(String emailAddress) throws EmailExistsException, InvalidEmailException {
-	    UserView userView = activateUser(emailAddress, initialPoints.get());
-        try {
-            quorumSetBalance(emailAddress, initialPoints.get());
-        } catch (InterruptedException ie) {
-            System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
-            Thread.currentThread().interrupt();
-        }
-        return userView;
+		return activateUser(emailAddress, initialPoints.get());
     }
 
+    /**
+	 *  Creates a local User if it doesn't exist already, checking for replicated versions
+	 *  New users are NOT replicated (no writes to stations)
+	 *  @param emailAddress
+	 *  @param points
+	 *  @return a UserView of the user
+	 */
 	private UserView activateUser(String emailAddress, int points) throws EmailExistsException, InvalidEmailException {
 		checkEmail(emailAddress);
 
-		synchronized(users) { //map.put is harmless if used twice with same email, but second put must throw EmailExistsException
-			if(hasEmail(emailAddress)) throw new EmailExistsException();
-            try { //Binas Manager might have crashed, need to check stations to confirm that user doesn't exist
-                quorumGetBalance(emailAddress);
-                throw new EmailExistsException();
+		//Quick cancel for efficiency
+		if(hasEmail(emailAddress)) throw new EmailExistsException();
 
-            } catch (UserNotExistsException une) {
-               User newUser = new User(emailAddress, false, points);
-                users.put(emailAddress, newUser);
-                return buildUserView(newUser);
+		User newUser = new User(emailAddress, false, points);
 
-            } catch (InterruptedException e) {
-				System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
-				Thread.currentThread().interrupt();
+		synchronized (newUser) {
+			try { //Need to check stations to confirm that user doesn't exist
+				quorumGetBalance(emailAddress);
+				throw new EmailExistsException();
+
+			} catch (UserNotExistsException une) {
+				synchronized (users) {
+					if(hasEmail(emailAddress)) throw new EmailExistsException();
+					users.put(emailAddress, newUser);
+				}
 			}
+
+			quorumSetBalance(emailAddress, points, newUser.getAndIncrementSeq());
+			return buildUserView(newUser);
 		}
-		return null;
 	}
 	
 	private void checkEmail(String email) throws InvalidEmailException {
@@ -173,21 +160,19 @@ public class BinasManager  {
 		return users.containsKey(email);
 	}
 	
-	private User getUser(String email) {
+	private User getUser(String email) throws UserNotExistsException {
         User user = users.get(email);
         if(user == null) {
-			int val = 0;
+			UserReplica freshestReplica;
 
 			try {
-				val = quorumGetBalance(email);
-			} catch (UserNotExistsException e) { //catching it here so that it is more explicit
-				return null; //User doesn't exist in BinasManager and isn't replicated in the stations
-			} catch (InterruptedException e) {
-				System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
-				Thread.currentThread().interrupt(); //TODO: check this (we should respond to binas-cli)
+				freshestReplica = quorumGetBalance(email);
+			} catch (UserNotExistsException une) { //catching it here so that it is more explicit
+				System.out.println("getUser: UserNotExistsException received from read quorum.");
+				throw une;
 			}
-
-			user = new User(email, false, val); //BinasManager Crashed and user exists in stations
+			//BinasManager crashed and user exists in stations
+			user = new User(email, false, freshestReplica.getPoints(), freshestReplica.getSeq());
             users.put(email, user);
         }
 	    return user;
@@ -197,7 +182,6 @@ public class BinasManager  {
 		InvalidStationException, NoBinaAvailException, NoCreditException, UserNotExistsException {
 
 		User user = getUser(userEmail);
-		if(user == null) throw  new UserNotExistsException(); //It is more explicit to catch the exception here than to let it propagate
 
 		user.getBina(stationId);
 	}
@@ -206,27 +190,25 @@ public class BinasManager  {
             InvalidStationException, NoBinaRentedException, UserNotExistsException {
 
 		User user = getUser(userEmail);
-		if(user == null) throw new UserNotExistsException();
-		
+
 		user.returnBina(stationId);
 	}
 
 
 	public int getCredit(String userEmail) throws UserNotExistsException {
 		User user = getUser(userEmail);
-		if(user == null) throw new UserNotExistsException();
+
 		return user.getCredit();
 	}
 
 	// test methods
 	public void testInit(int userInitialPoints) throws BadInitException {
 		if(userInitialPoints >= 0) {
-			initialPoints.set(userInitialPoints);
+			initialPoints.set(userInitialPoints); //atomic
 		} else {
 			throw new BadInitException("initial points must be non negative");
 		}
 	}
-
 
 	public void testInitStation(String stationId, int x, int y, int capacity, int returnPrize) throws BadInitException {
 		StationClient station = lookupStation(stationId);
@@ -244,45 +226,36 @@ public class BinasManager  {
 	public void testClear() {
 		synchronized (users) {
 		    users.clear();
-		    seq.set(0);
         }
-        for (StationClient stationClient: findActiveStations()) {
+		List<StationClient> activeStations = findActiveStations();
+		if(activeStations == null) {
+			System.out.println("testClear: findActiveStations failed. Cannot clear stations");
+			return;
+		}
+        for (StationClient stationClient: activeStations) {
 			stationClient.testClear();
 		}
 	}
 
-	private UserReplica buildUserReplica(long seq, String email, int points) {
-		UserReplica replica = new UserReplica();
-		replica.setEmail(email);
-		replica.setPoints(points);
-		replica.setSeq(seq);
-		return replica;
-	}
-
-
-
-	/* - -Throws interruptedException because when this exception occurs it means someone is trying to end the execution,
-	 (e.g ctrl + c) therefore it is a bad idea to catch it here.
-	 - - No need to verify if the user doesn't exist, this is a set
-	 */
-	public void quorumSetBalance(String email, int points) throws InterruptedException { //TODO verify if it is best to throw  this exception or to handle it above
-		long seq = this.seq.getAndIncrement();
-		List<Response<SetBalanceResponse>> pending = new ArrayList<>();
-		Set<Response<SetBalanceResponse>> doneResponses = new HashSet<>();
-
+	public void quorumSetBalance(String email, int points, long seq) {
 
 		//Calling the setBalanceAsync method in all the stations
 		ArrayList<StationClient> activeStations = findActiveStations();
+		if(activeStations == null) {
+			System.out.println("quorumSetBalance: findActiveStations failed. Data was not replicated.");
+			return;
+		}
+
+		List<Response<SetBalanceResponse>> pending = new ArrayList<>();
 		for (StationClient station: activeStations) {
 			System.out.println(String.format("CALL(%s) setBalanceAsync: %d, %s, %d", station.getWsURL(), seq, email, points));
 			pending.add(station.setBalanceAsync(buildUserReplica(seq, email, points)));
 		}
 
-
-
-		//Pooling for all responses
+		//Polling for all responses
+		Set<Response<SetBalanceResponse>> doneResponses = new HashSet<>();
 		while(doneResponses.size() < NUM_STATIONS/2 + 1) {
-			Thread.sleep(POLLING_RATE);
+			sleep(POLLING_RATE, "RESPONSE setBalanceAsync: Thread interrupted while sleeping");
 			for(Response<SetBalanceResponse> response : pending) {
 				if(response.isDone()) {
 					doneResponses.add(response);
@@ -296,31 +269,31 @@ public class BinasManager  {
 
 	}
 
-	private int quorumGetBalance(String email) throws UserNotExistsException, InterruptedException {
+	private UserReplica quorumGetBalance(String email) throws UserNotExistsException {
 		BinasManager bm = BinasManager.getInstance();
-		List<Response<GetBalanceResponse>> pending = new ArrayList<>();
-		int i = 0;
+		List<StationClient> activeStations = bm.findActiveStations();
 
-		//get all needed responses
-		List<StationClient> stationClients = bm.findActiveStations();
-
-		if(stationClients.size() < NUM_STATIONS/2 + 1) {
-			System.out.println("Not enough stations up for majority quorum");
-			throw new InterruptedException();
+		if(activeStations == null) {
+			System.out.println("quorumSetBalance: findActiveStations failed. Data was not replicated.");
+			return buildUserReplica(-1, "", -1); //TODO CHECK THIS
 		}
 
-		for (StationClient station: stationClients) {
+		if(activeStations.size() < NUM_STATIONS/2 + 1) {
+			System.out.println("Not enough stations up for majority quorum");
+			return buildUserReplica(-1, "", -1); //TODO CHECK THIS
+		}
+
+		int i = 0;
+		List<Response<GetBalanceResponse>> pending = new ArrayList<>();
+		for (StationClient station: activeStations) {	//send query to each station (asynchronous)
 			System.out.println(String.format("CALL %d (%s) GetBalanceAsync: %s ", i++, station.getWsURL(), email));
 			pending.add(station.getBalanceAsync(email));
 		}
 
 		//Polling for all responses
-
 		Set<Response<GetBalanceResponse>> doneResponses = new HashSet<>();
-
 		while(doneResponses.size() < NUM_STATIONS/2 + 1) {
-			//Only possible reason is 2 or more InvalidUser_Exception
-			Thread.sleep(POLLING_RATE);
+			sleep(POLLING_RATE, "RESPONSE getBalanceAsync: Thread interrupted while sleeping");
 			for(Response<GetBalanceResponse> response : pending) {
 				if(response.isDone()) {
 					doneResponses.add(response);
@@ -328,8 +301,7 @@ public class BinasManager  {
 			}
 		}
 
-		Set<GetBalanceResponse> goodResponses = new HashSet<>();
-
+		List<GetBalanceResponse> goodResponses = new ArrayList<>();
 		for(Response<GetBalanceResponse> response: doneResponses) {
 			try {
 				goodResponses.add(response.get());
@@ -338,29 +310,39 @@ public class BinasManager  {
 				if(e.getCause() instanceof InvalidUser_Exception) { //Valid answer, station might not know about the user
 					System.out.println("RESPONSE getBalanceAsync: Invalid User");
 				}
+			} catch (InterruptedException e) {
+				System.out.println("RESPONSE getBalanceAsync: Thread Interrupted, skipping...");
 			}
 		}
 
 		UserReplica freshestReplica = goodResponses.stream().map(GetBalanceResponse::getReturn)
 				.max(Comparator.comparing(UserReplica::getSeq)).orElseThrow( () -> new UserNotExistsException() );
 
-		//attempt to make quorum work with global seq. TODO: check if correct
-		seq.accumulateAndGet(freshestReplica.getSeq()+1, Long::max); //updates to biggest value (only updates if BM had crashed
-
-		return freshestReplica.getPoints();
+		return freshestReplica;
 	}
 
+	// Exception handling helpers --------------------------------------------
 
-	/*
-	* 					} catch (ExecutionException e) {
-						if(e.getCause() instanceof InvalidUser_Exception) { //Valid answer, station might not know about the user
-							doneResponses.add(response);
-							System.out.println("RESPONSE setBalanceAsync: Invalid User exception thrown");
-						}
-						else { System.out.println("Unknown exception occured"); }//Other exception occurred (e.g WS timeout)
-					}
-	* */
-    // View helpers ----------------------------------------------------------
+	/** Helper for sleep */
+	private void sleep(int mil, String interruptMsg) {
+		try {
+			Thread.sleep(mil);
+		} catch (InterruptedException ie) {
+			System.out.println(interruptMsg);
+			Thread.currentThread().interrupt(); //TODO: check if this is ok.
+		}
+	}
+
+    // View/Constructor helpers ----------------------------------------------------------
+
+	/** Helper to create a UserReplica. */
+	private UserReplica buildUserReplica(long seq, String email, int points) {
+		UserReplica replica = new UserReplica();
+		replica.setEmail(email);
+		replica.setPoints(points);
+		replica.setSeq(seq);
+		return replica;
+	}
 
     /** Helper to convert user to a user view. */
     private UserView buildUserView(User user) {

@@ -7,17 +7,26 @@ import org.binas.station.ws.cli.StationClient;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class User {
 
     private final String email;
-    private final AtomicBoolean hasBina;
-    private final AtomicInteger credit; //"cached"
+
+    private boolean hasBina;
+    private int credit; //"cached"
+
+    private final AtomicLong seq;
 
     public User(String email, boolean hasBina, int credit) {
+        this(email, hasBina, credit, 0);
+    }
+
+    public User(String email, boolean hasBina, int credit, long seq) {
         this.email = email;
-        this.hasBina = new AtomicBoolean(hasBina);
-        this.credit = new AtomicInteger(credit);
+        this.hasBina = hasBina;
+        this.credit = credit;
+        this.seq = new AtomicLong(seq);
     }
 
     public String getEmail() {
@@ -25,18 +34,19 @@ public class User {
     }
 
     public boolean hasBina() {
-        return hasBina.get();
+        return hasBina;
     }
 
     public void setHasBina(boolean hasBina) {
-        this.hasBina.set(hasBina);
+        this.hasBina = hasBina;
     } //for testing
 
     public int getCredit() {
-        return credit.get();
+        return credit;
     }
 
-    //TODO: Ask teacher about double synchronized here (synchronized(credit) {synchronized(hasBina) {} } )
+    public long getAndIncrementSeq() { return seq.getAndIncrement(); }
+
     synchronized void getBina(String stationId)  throws AlreadyHasBinaException,
             InvalidStationException, NoBinaAvailException, NoCreditException {
 
@@ -53,15 +63,9 @@ public class User {
             throw new NoBinaAvailException("");
         }
 
-        synchronized (credit) {
-            try {
-                bm.quorumSetBalance(getEmail(), getCredit() - 1);
-            } catch (InterruptedException ie) {
-                System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
-                Thread.currentThread().interrupt(); //TODO: check this (we should respond to binas-cli)
-            }
-            this.credit.decrementAndGet();
-        }
+        this.credit--;
+        bm.quorumSetBalance(getEmail(), this.credit, getAndIncrementSeq());
+
         setHasBina(true);
     }
 
@@ -80,15 +84,10 @@ public class User {
         } catch (NoSlotAvail_Exception e) {
             throw new FullStationException();
         }
-        synchronized (credit) {
-            try {
-                bm.quorumSetBalance(getEmail(), getCredit() + bonus);
-            } catch (InterruptedException ie) {
-                System.out.println("Thread was interrupted while executing quorumGetBalance. Terminating gracefully.");
-                Thread.currentThread().interrupt(); //TODO: check this (we should respond to binas-cli)
-            }
-            this.credit.addAndGet(bonus);
-        }
+
+        this.credit += bonus;
+        bm.quorumSetBalance(getEmail(), this.credit, getAndIncrementSeq());
+
         setHasBina(false);
     }
 }

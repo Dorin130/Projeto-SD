@@ -146,9 +146,6 @@ public class Station {
 		synchronized (stationUser) {
 			if(user.getSeq() > users.get(user.getEmail()).getSeq())
 				users.put(user.getEmail(), user);
-			else
-			    System.out.println("Old Seq number, ignoring...");
-
 		}
 	}
 

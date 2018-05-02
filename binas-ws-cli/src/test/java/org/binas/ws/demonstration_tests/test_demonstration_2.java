@@ -23,29 +23,47 @@ public class test_demonstration_2 extends BaseIT {
 
         System.out.println("Activating Users");
 
+        System.out.println("Activating the users...");
+        System.out.println("activateUser("+USER+")");
         client.activateUser(USER);
+        System.out.println("activateUser("+USER2+")");
         client.activateUser(USER2);
+        System.out.println("activateUser("+USER3+")");
         client.activateUser(USER3);
 
-        for(int i=1; i<2; i++) {
-            System.out.println(String.format("Iteration %d", i));
+        for(int i=1; i<5; i++) {
+            System.out.println(String.format("----------------Iteration %d----------------", i));
 
+            System.out.println("Renting binas and checking credit...");
+            System.out.println("rentBina("+S1 + ", " + USER + ")");
             client.rentBina(S1, USER);
+            System.out.println("getCredit(" + USER + ")");
             Assert.assertEquals(INITIAL_POINTS - 1, client.getCredit(USER));
 
+            System.out.println("rentBina("+S1 + ", " + USER2 + ")");
             client.rentBina(S1, USER2);
+            System.out.println("getCredit(" + USER2 + ")");
             Assert.assertEquals(INITIAL_POINTS - 1, client.getCredit(USER2));
 
+            System.out.println("rentBina("+S1 + ", " + USER3 + ")");
             client.rentBina(S1, USER3);
+            System.out.println("getCredit(" + USER3 + ")");
             Assert.assertEquals(INITIAL_POINTS - 1, client.getCredit(USER3));
 
+            System.out.println("Returning binas and checking credit...");
+            System.out.println("returnBina("+S1 + ", " + USER + ")");
             client.returnBina(S1, USER);
+            System.out.println("getCredit(" + USER + ")");
             Assert.assertEquals(INITIAL_POINTS, client.getCredit(USER));
 
+            System.out.println("returnBina("+S1 + ", " + USER2 + ")");
             client.returnBina(S1, USER2);
+            System.out.println("getCredit(" + USER2 + ")");
             Assert.assertEquals(INITIAL_POINTS, client.getCredit(USER2));
 
+            System.out.println("returnBina("+S1 + ", " + USER3 + ")");
             client.returnBina(S1, USER3);
+            System.out.println("getCredit(" + USER3 + ")");
             Assert.assertEquals(INITIAL_POINTS, client.getCredit(USER3));
 
         }

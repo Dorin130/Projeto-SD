@@ -109,6 +109,9 @@
 					<!-- to prevent deprecation warning: -->
 					<killAfter>-1</killAfter>
 					<mainClass>${mainclass}</mainClass>
+					<!-- If this is false, maven does nothing about the daemon threads.
+					When maven has no more work to do, the VM will normally terminate any remaining daemon threads. -->
+					<cleanupDaemonThreads>false</cleanupDaemonThreads>
 					<arguments>
 						<argument>${ws.name}</argument>
 						<argument>${ws.url}</argument>

@@ -2,14 +2,10 @@ package org.binas.ws;
 
 import org.binas.domain.BinasManager;
 import org.binas.domain.CoordinatesComparator;
-import org.binas.domain.User;
 
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.jws.WebService;
-import javax.xml.ws.Response;
 
 import org.binas.domain.exception.BadInitException;
 import org.binas.domain.exception.EmailExistsException;
@@ -19,10 +15,7 @@ import org.binas.domain.exception.InvalidStationException;
 import org.binas.domain.exception.NoBinaRentedException;
 import org.binas.domain.exception.UserNotExistsException;
 import org.binas.domain.exception.*;
-import org.binas.station.ws.GetBalance;
-import org.binas.station.ws.GetBalanceResponse;
-import org.binas.station.ws.SetBalanceResponse;
-import org.binas.station.ws.UserReplica;
+
 import org.binas.station.ws.cli.StationClient;
 
 /**
