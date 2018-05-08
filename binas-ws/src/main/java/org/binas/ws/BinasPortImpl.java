@@ -5,6 +5,7 @@ import org.binas.domain.CoordinatesComparator;
 
 import java.util.*;
 
+import javax.jws.HandlerChain;
 import javax.jws.WebService;
 
 import org.binas.domain.exception.BadInitException;
@@ -29,6 +30,7 @@ import org.binas.station.ws.cli.StationClient;
         targetNamespace="http://ws.binas.org/",
         serviceName = "BinasService"
 )
+@HandlerChain(file = "/binas-ws-handler-chain.xml")
 public class BinasPortImpl implements BinasPortType {
 
 

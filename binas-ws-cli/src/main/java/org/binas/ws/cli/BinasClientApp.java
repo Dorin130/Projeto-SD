@@ -54,8 +54,7 @@ public class BinasClientApp {
                 uddiURL, wsName);
             client = new BinasClient(uddiURL, wsName);
         }
-
-        System.out.println("---------------F1---------------");
+        System.out.println(client.testPing("oi"));/*
         setup(client);
         activateUsers(client);
         run(client);
@@ -83,7 +82,7 @@ public class BinasClientApp {
         System.out.println("-----------Iteration 3----------");
         run(client);
 
-        teardown(client);
+        teardown(client);*/
 
 	 }
 
