@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.xml.ws.BindingProvider;
 
+import example.ws.handler.KerberosClientHandler;
 import org.binas.ws.AlreadyHasBina_Exception;
 import org.binas.ws.BadInit_Exception;
 import org.binas.ws.BinasPortType;
@@ -66,15 +67,19 @@ public class BinasClient implements BinasPortType {
 	}
 
 	/** constructor with provided web service URL */
-	public BinasClient(String wsURL) throws BinasClientException {
+	public BinasClient(String wsURL, String user, String pass) throws BinasClientException {
 		this.wsURL = wsURL;
+		KerberosClientHandler.setUSER(user);
+		KerberosClientHandler.setPASS(pass);
 		createStub();
 	}
 
 	/** constructor with provided UDDI location and name */
-	public BinasClient(String uddiURL, String wsName) throws BinasClientException {
+	public BinasClient(String uddiURL, String wsName, String user, String pass) throws BinasClientException {
 		this.uddiURL = uddiURL;
 		this.wsName = wsName;
+		KerberosClientHandler.setUSER(user);
+		KerberosClientHandler.setPASS(pass);
 		uddiLookup();
 		createStub();
 	}

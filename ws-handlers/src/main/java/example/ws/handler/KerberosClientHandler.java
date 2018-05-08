@@ -7,6 +7,9 @@ import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.util.Set;
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
+    private static String USER;
+    private static String PASS;
+
     @Override
     public Set<QName> getHeaders() {
         return null;//TODO
@@ -25,5 +28,13 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     @Override
     public void close(MessageContext context) {
         //TODO
+    }
+
+    public static void setUSER(String user) {
+        USER = user;
+    }
+
+    public static void setPASS(String pass) {
+        PASS = pass;
     }
 }
