@@ -11,32 +11,28 @@ import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.security.spec.InvalidKeySpecException;
+import java.util.*;
+
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     Properties properties;
     SecureRandom secureRandom;
     TicketCollection ticketCollection;
     KerbyClient kerbyClient;
-
-
-    public static final String CONTEXT_PROPERTY = "user.ticket";
+    CipherClerk cipherClerk;
+    Key clientKey;
 
     public KerberosClientHandler() {
         super();
         this.properties = new Properties();
         this.secureRandom = new SecureRandom();
         this.ticketCollection = new TicketCollection();
-        try {
-            this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
-        } catch (KerbyClientException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
+        this.cipherClerk = new CipherClerk();
+
         // load configuration properties
         try {
             InputStream inputStream = KerberosClientHandler.class.getClassLoader().getResourceAsStream("config.properties");
@@ -50,6 +46,20 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
         } catch (IOException e) {
             System.out.printf("Failed to load configuration: %s%n", e);
             return;
+        }
+
+        try {
+            this.clientKey = SecurityHelper.generateKeyFromPassword(properties.getProperty("pass"));
+            this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
+        } catch (KerbyClientException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
         }
     }
 
@@ -67,21 +77,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
         try {
             if (outboundElement.booleanValue()) {
-                System.out.println("Writing header to OUTbound SOAP message...");
-
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-
-                // add header
-                SOAPHeader sh = se.getHeader();
-                if (sh == null)
-                    sh = se.addHeader();
-
-                // add header element (name, namespace prefix, namespace)
-                Name name = se.createName("ticket");
-                SOAPHeaderElement element = sh.addHeaderElement(name);
+                System.out.println("Writing ticket to OUTbound SOAP message...");
 
                 long nonce = secureRandom.nextLong();
 
@@ -96,8 +92,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                     ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
                 }
 
-                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(),
-                        SecurityHelper.generateKeyFromPassword(properties.getProperty("pass")));
+                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
 
                 CipheredView ticketView = sktv.getTicket();
 
@@ -106,8 +101,33 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                     throw new RuntimeException("SECURITY WARNING: nonce mismatch");
                 }
 
-                String valueString = "BLA";
-                element.addTextNode(valueString);
+                // get SOAP envelope
+                SOAPMessage msg = smc.getMessage();
+                SOAPPart sp = msg.getSOAPPart();
+                SOAPEnvelope se = sp.getEnvelope();
+
+                // add header
+                SOAPHeader sh = se.getHeader();
+                if (sh == null)
+                    sh = se.addHeader();
+
+                // add header element (name, namespace prefix, namespace)
+                Name name = se.createName("ticket", "sec", "http://ws.binas.org/");
+                SOAPHeaderElement element = sh.addHeaderElement(name);
+
+                // add header element value
+                byte[] encodedBytes = Base64.getEncoder().encode(ticketView.getData());
+                element.addTextNode(new String(encodedBytes));
+
+                System.out.println("Writing auth to OUTbound SOAP message...");
+
+                name = se.createName("auth", "sec", "http://ws.binas.org/");
+                element = sh.addHeaderElement(name);
+
+                // add header element value
+                Auth auth = new Auth(properties.getProperty("client"), new Date());
+                encodedBytes = Base64.getEncoder().encode(auth.cipher(clientKey).getData());
+                element.addTextNode(new String(encodedBytes));
 
             } else {
                 System.out.println("KerberosClientHandler ignores...");
