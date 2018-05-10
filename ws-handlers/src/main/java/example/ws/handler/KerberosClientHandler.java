@@ -1,6 +1,5 @@
 package example.ws.handler;
 
-import org.w3c.dom.Node;
 import pt.ulisboa.tecnico.sdis.kerby.*;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClient;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClientException;
@@ -12,7 +11,10 @@ import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
 
@@ -22,9 +24,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     TicketCollection ticketCollection;
     KerbyClient kerbyClient;
     CipherClerk cipherClerk;
-
-
-    public static final String CONTEXT_PROPERTY = "user.ticket";
+    Key clientKey;
 
     public KerberosClientHandler() {
         super();
@@ -32,12 +32,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
         this.secureRandom = new SecureRandom();
         this.ticketCollection = new TicketCollection();
         this.cipherClerk = new CipherClerk();
-        try {
-            this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
-        } catch (KerbyClientException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
+
         // load configuration properties
         try {
             InputStream inputStream = KerberosClientHandler.class.getClassLoader().getResourceAsStream("config.properties");
@@ -51,6 +46,20 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
         } catch (IOException e) {
             System.out.printf("Failed to load configuration: %s%n", e);
             return;
+        }
+
+        try {
+            this.clientKey = SecurityHelper.generateKeyFromPassword(properties.getProperty("pass"));
+            this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
+        } catch (KerbyClientException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
         }
     }
 
@@ -68,7 +77,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
         try {
             if (outboundElement.booleanValue()) {
-                System.out.println("Writing header to OUTbound SOAP message...");
+                System.out.println("Writing ticket to OUTbound SOAP message...");
 
                 long nonce = secureRandom.nextLong();
 
@@ -83,8 +92,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                     ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
                 }
 
-                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(),
-                        SecurityHelper.generateKeyFromPassword(properties.getProperty("pass")));
+                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
 
                 CipheredView ticketView = sktv.getTicket();
 
@@ -109,6 +117,16 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
                 // add header element value
                 byte[] encodedBytes = Base64.getEncoder().encode(ticketView.getData());
+                element.addTextNode(new String(encodedBytes));
+
+                System.out.println("Writing auth to OUTbound SOAP message...");
+
+                name = se.createName("auth", "sec", "http://ws.binas.org/");
+                element = sh.addHeaderElement(name);
+
+                // add header element value
+                Auth auth = new Auth(properties.getProperty("client"), new Date());
+                encodedBytes = Base64.getEncoder().encode(auth.cipher(clientKey).getData());
                 element.addTextNode(new String(encodedBytes));
 
             } else {
