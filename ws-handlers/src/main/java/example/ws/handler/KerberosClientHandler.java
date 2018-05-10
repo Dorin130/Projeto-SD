@@ -13,12 +13,8 @@ import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     Properties properties;
@@ -112,8 +108,8 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPHeaderElement element = sh.addHeaderElement(name);
 
                 // add header element value
-                String valueString = printHexBinary(ticketView.getData());
-                element.addTextNode(valueString);
+                byte[] encodedBytes = Base64.getEncoder().encode(ticketView.getData());
+                element.addTextNode(new String(encodedBytes));
 
             } else {
                 System.out.println("KerberosClientHandler ignores...");
