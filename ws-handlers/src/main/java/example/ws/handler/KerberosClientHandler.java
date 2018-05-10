@@ -1,6 +1,8 @@
 package example.ws.handler;
 
+import pt.ulisboa.tecnico.sdis.kerby.*;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClient;
+import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClientException;
 
 import javax.xml.namespace.QName;
 import javax.xml.soap.*;
@@ -10,22 +12,31 @@ import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
-    private static String USER;
-    private static String PASS;
     Properties properties;
-    SecureRandom SecureRandom;
+    SecureRandom secureRandom;
+    TicketCollection ticketCollection;
+    KerbyClient kerbyClient;
+
 
     public static final String CONTEXT_PROPERTY = "user.ticket";
 
     public KerberosClientHandler() {
         super();
         this.properties = new Properties();
-        this.SecureRandom = new SecureRandom();
+        this.secureRandom = new SecureRandom();
+        this.ticketCollection = new TicketCollection();
+        try {
+            this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
+        } catch (KerbyClientException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
         // load configuration properties
         try {
             InputStream inputStream = KerberosClientHandler.class.getClassLoader().getResourceAsStream("config.properties");
@@ -72,49 +83,34 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 Name name = se.createName("ticket");
                 SOAPHeaderElement element = sh.addHeaderElement(name);
 
-                KerbyClient kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
-                // add header element value
-                int value = 22;
-                String valueString = Integer.toString(value);
+                long nonce = secureRandom.nextLong();
+
+                SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
+
+                if (sktv == null) {
+                    long expirationTime = (new Date()).getTime() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000;
+
+                    sktv = kerbyClient.requestTicket(properties.getProperty("user"),
+                            properties.getProperty("binas"), nonce, Integer.parseInt(properties.getProperty("ticketTime")));
+
+                    ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
+                }
+
+                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(),
+                        SecurityHelper.generateKeyFromPassword(properties.getProperty("pass")));
+
+                CipheredView ticketView = sktv.getTicket();
+
+                if (sessionKey.getNounce() != nonce) {
+                    System.out.println("SECURITY WARNING: nonce mismatch");
+                    throw new RuntimeException("SECURITY WARNING: nonce mismatch");
+                }
+
+                String valueString = "BLA";
                 element.addTextNode(valueString);
 
             } else {
-                System.out.println("Reading header from INbound SOAP message...");
-
-                // get SOAP envelope header
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-                SOAPHeader sh = se.getHeader();
-
-                // check header
-                if (sh == null) {
-                    System.out.println("Header not found.");
-                    return true;
-                }
-
-                // get first header element
-                Name name = se.createName("myHeader", "d", "http://demo");
-                Iterator<?> it = sh.getChildElements(name);
-                // check header element
-                if (!it.hasNext()) {
-                    System.out.println("Header element not found.");
-                    return true;
-                }
-                SOAPElement element = (SOAPElement) it.next();
-
-                // get header element value
-                String valueString = element.getValue();
-                int value = Integer.parseInt(valueString);
-
-                // print received header
-                System.out.println("Header value is " + value);
-
-                // put header in a property context
-                smc.put(CONTEXT_PROPERTY, value);
-                // set property scope to application client/server class can
-                // access it
-                smc.setScope(CONTEXT_PROPERTY, MessageContext.Scope.APPLICATION);
+                System.out.println("KerberosClientHandler ignores...");
 
             }
         } catch (Exception e) {
@@ -134,13 +130,5 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     @Override
     public void close(MessageContext context) {
         //TODO
-    }
-
-    public static void setUSER(String user) {
-        USER = user;
-    }
-
-    public static void setPASS(String pass) {
-        PASS = pass;
     }
 }

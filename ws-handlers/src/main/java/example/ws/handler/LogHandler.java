@@ -76,6 +76,7 @@ public class LogHandler implements SOAPHandler<SOAPMessageContext> {
 
 		// print SOAP message contents
 		SOAPMessage message = smc.getMessage();
+
 		try {
 			message.writeTo(out);
 			// print a newline after message

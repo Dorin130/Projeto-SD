@@ -34,17 +34,11 @@ public class BinasClientApp {
         String uddiURL = null;
         String wsName = null;
         String wsURL = null;
-        String user = null;
-        String pass = null;
-        if (args.length == 3) {
+        if (args.length == 1) {
             wsURL = args[0];
-            user = args[1];
-            pass = args[2];
-        } else if (args.length >= 4) {
+        } else if (args.length >= 2) {
             uddiURL = args[0];
             wsName = args[1];
-            user = args[2];
-            pass = args[3];
         }
 
 		System.out.println(BinasClientApp.class.getSimpleName() + " running");
@@ -53,12 +47,12 @@ public class BinasClientApp {
         BinasClient client = null;
 
         if (wsURL != null) {
-            System.out.printf("Creating client for server at %s, user:%s, pass:%s%n", wsURL, user, pass);
-            client = new BinasClient(wsURL, user, pass);
+            System.out.printf("Creating client for server at %s%n", wsURL);
+            client = new BinasClient(wsURL);
         } else if (uddiURL != null) {
-            System.out.printf("Creating client using UDDI at %s for server with name %s, user:%s, pass:%s%n",
-                uddiURL, wsName, user, pass);
-            client = new BinasClient(uddiURL, wsName, user, pass);
+            System.out.printf("Creating client using UDDI at %s for server with name %s%n",
+                uddiURL, wsName);
+            client = new BinasClient(uddiURL, wsName);
         }
         System.out.println(client.testPing("oi"));/*
         setup(client);

@@ -24,8 +24,6 @@
 
         <uddi.user>a17</uddi.user>
         <uddi.pass>3VRki4z</uddi.pass>
-        <kerby.user>alice@A17.binas.org</kerby.user>
-        <kerby.pass>jiVy2ACp</kerby.pass>
 
 
         <uddi.url>http://${uddi.user}:${uddi.pass}@uddi.sd.rnl.tecnico.ulisboa.pt:9090/</uddi.url>
@@ -131,8 +129,6 @@
                     <arguments>
                         <argument>${uddi.url}</argument>
                         <argument>${ws.name}</argument>
-                        <argument>${kerby.user}</argument>
-                        <argument>${kerby.pass}</argument>
                     </arguments>
                 </configuration>
             </plugin>
