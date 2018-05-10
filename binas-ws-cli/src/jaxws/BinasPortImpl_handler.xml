@@ -53,7 +53,7 @@
 
 
         <handler>
-            <handler-class>example.ws.handler.LogHandler</handler-class>
+            <handler-class>example.ws.handler.PrettyLogHandler</handler-class>
         </handler>
 
     </handler-chain>

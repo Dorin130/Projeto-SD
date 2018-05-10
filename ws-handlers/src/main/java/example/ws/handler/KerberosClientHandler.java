@@ -1,5 +1,6 @@
 package example.ws.handler;
 
+import org.w3c.dom.Node;
 import pt.ulisboa.tecnico.sdis.kerby.*;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClient;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClientException;
@@ -17,11 +18,14 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
+
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     Properties properties;
     SecureRandom secureRandom;
     TicketCollection ticketCollection;
     KerbyClient kerbyClient;
+    CipherClerk cipherClerk;
 
 
     public static final String CONTEXT_PROPERTY = "user.ticket";
@@ -31,6 +35,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
         this.properties = new Properties();
         this.secureRandom = new SecureRandom();
         this.ticketCollection = new TicketCollection();
+        this.cipherClerk = new CipherClerk();
         try {
             this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
         } catch (KerbyClientException e) {
@@ -69,20 +74,6 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
             if (outboundElement.booleanValue()) {
                 System.out.println("Writing header to OUTbound SOAP message...");
 
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-
-                // add header
-                SOAPHeader sh = se.getHeader();
-                if (sh == null)
-                    sh = se.addHeader();
-
-                // add header element (name, namespace prefix, namespace)
-                Name name = se.createName("ticket");
-                SOAPHeaderElement element = sh.addHeaderElement(name);
-
                 long nonce = secureRandom.nextLong();
 
                 SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
@@ -106,7 +97,22 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                     throw new RuntimeException("SECURITY WARNING: nonce mismatch");
                 }
 
-                String valueString = "BLA";
+                // get SOAP envelope
+                SOAPMessage msg = smc.getMessage();
+                SOAPPart sp = msg.getSOAPPart();
+                SOAPEnvelope se = sp.getEnvelope();
+
+                // add header
+                SOAPHeader sh = se.getHeader();
+                if (sh == null)
+                    sh = se.addHeader();
+
+                // add header element (name, namespace prefix, namespace)
+                Name name = se.createName("ticket", "sec", "http://ws.binas.org/");
+                SOAPHeaderElement element = sh.addHeaderElement(name);
+
+                // add header element value
+                String valueString = printHexBinary(ticketView.getData());
                 element.addTextNode(valueString);
 
             } else {
