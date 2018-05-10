@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
+import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.transform.OutputKeys;
@@ -91,6 +92,12 @@ public class PrettyLogHandler implements SOAPHandler<SOAPMessageContext> {
 		try {
 			SOAPMessage message = smc.getMessage();
 			Source src = message.getSOAPPart().getContent();
+
+			System.out.println(">>>>>>>>>>>>>>>>" );
+			System.out.println(message.getSOAPPart().getEnvelope().getBody().getTextContent());
+
+
+
 
 			// transform the (DOM) Source into a StreamResult
 			Transformer transformer = transformerFactory.newTransformer();

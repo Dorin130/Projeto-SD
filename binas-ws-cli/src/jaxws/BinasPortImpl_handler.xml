@@ -25,9 +25,9 @@
             Write a custom SOAP header to an outbound message;
             read the custom header from the inbound message
         -->
-        <!--<handler>
+        <handler>
             <handler-class>example.ws.handler.HeaderHandler</handler-class>
-        </handler>-->
+        </handler>
 
         <!--
             Print the endpoint address.
@@ -47,13 +47,13 @@
             Print the SOAP message with added indentation for easier reading.
         -->
 
-        <handler>
+        <!--handler>
             <handler-class>example.ws.handler.KerberosClientHandler</handler-class>
-        </handler>
+        </handler-->
 
 
         <handler>
-            <handler-class>example.ws.handler.LogHandler</handler-class>
+            <handler-class>example.ws.handler.PrettyLogHandler</handler-class>
         </handler>
 
     </handler-chain>
