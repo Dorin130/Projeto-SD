@@ -1,11 +1,13 @@
 package example.ws.handler;
 
 import java.io.PrintStream;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
+import javax.xml.soap.SOAPBody;
 import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
@@ -15,6 +17,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.ws.handler.MessageContext;
 import javax.xml.ws.handler.soap.SOAPHandler;
@@ -92,7 +95,13 @@ public class PrettyLogHandler implements SOAPHandler<SOAPMessageContext> {
 		try {
 			SOAPMessage message = smc.getMessage();
 			Source src = message.getSOAPPart().getContent();
-
+			/*SOAPBody element = smc.getMessage().getSOAPBody();
+			DOMSource source = new DOMSource(element);
+			StringWriter stringResult = new StringWriter();
+			TransformerFactory.newInstance().newTransformer().transform(source, new StreamResult(stringResult));
+			String out2 = stringResult.toString();
+			System.out.println("HEEEEEEEEEY");
+			System.out.println(out2);*/
 			// transform the (DOM) Source into a StreamResult
 			Transformer transformer = transformerFactory.newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");

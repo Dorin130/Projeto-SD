@@ -97,7 +97,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
 
-                MACHandler.setSESSIONKEY(sessionKey);
+                MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
 
                 CipheredView ticketView = sktv.getTicket();
 
@@ -130,18 +130,18 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 element = sh.addHeaderElement(name);
 
                 // add header element value
-                Auth auth = new Auth(properties.getProperty("client"), new Date());
-                encodedBytes = Base64.getEncoder().encode(auth.cipher(clientKey).getData());
+                Auth auth = new Auth(properties.getProperty("user"), new Date());
+
+                encodedBytes = Base64.getEncoder().encode(auth.cipher(sessionKey.getKeyXY()).getData());
                 element.addTextNode(new String(encodedBytes));
 
 
                 // put header in a property context
-                smc.put(CONTEXT_SESSION_KEY, sessionKey);
-                smc.put("test", "HEEEEEEEEEEEEEEEEEEEY");
+                //smc.put(CONTEXT_SESSION_KEY, sessionKey);
                 // set property scope to application client/server class can
                 // access it
-                smc.setScope(CONTEXT_SESSION_KEY, MessageContext.Scope.APPLICATION);
-                smc.setScope("test", MessageContext.Scope.APPLICATION);
+                //smc.setScope(CONTEXT_SESSION_KEY, MessageContext.Scope.APPLICATION);
+                //smc.setScope("test", MessageContext.Scope.APPLICATION);
 
             } else {
                 System.out.println("KerberosClientHandler ignores...");

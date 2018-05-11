@@ -29,7 +29,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
     private String bla = "kek";
     private final String PROPERTY = "test";
     private boolean onlyOne = true;
-    public static SessionKey SESSIONKEY;
+    public static Key SESSIONKEY;
 
     public static Boolean isClient = false; //Need to know if the handler is being executed in the client Side or in the server side
 
@@ -64,7 +64,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
     }
     public String decipherMAC(CipheredView cipheredMACWrapper) throws KerbyException {
-        CipheredView decipheredMACWrapper = SecurityHelper.decipher(CipheredView.class, cipheredMACWrapper, SESSIONKEY.getKeyXY());
+        CipheredView decipheredMACWrapper = SecurityHelper.decipher(CipheredView.class, cipheredMACWrapper, SESSIONKEY);
         byte[] receivedMac = decipheredMACWrapper.getData();
         return new String(receivedMac);
     }
@@ -75,7 +75,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         CipheredView wrapper = new CipheredView();
         wrapper.setData(calculatedMac.getBytes());
 
-        return SecurityHelper.cipher(CipheredView.class, wrapper, SESSIONKEY.getKeyXY());
+        return SecurityHelper.cipher(CipheredView.class, wrapper, SESSIONKEY);
     }
 
     private String extractContentFromContextToString(SOAPMessageContext context) throws SOAPException, TransformerException {
@@ -99,7 +99,28 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
         try {
             if (outboundElement.booleanValue() && isClient) { //clientSide
-                String b = (String) context.get(PROPERTY);
+
+
+                String a = "kek";
+                CipheredView wrapper = new CipheredView();
+                wrapper.setData(a.getBytes());
+                CipheredView b = SecurityHelper.cipher(CipheredView.class, wrapper, SESSIONKEY);
+
+                System.out.println(new String(b.getData()));
+
+                byte[] encodedBytes = Base64.getEncoder().encode(b.getData());
+                byte[] decodedBytes = Base64.getDecoder().decode(encodedBytes);
+
+                System.out.println(new String(decodedBytes));
+
+                CipheredView c = new CipheredView();
+                c.setData(decodedBytes);
+                CipheredView decoded = SecurityHelper.decipher(CipheredView.class, c, SESSIONKEY);
+
+                System.out.println(new String(decoded.getData()));
+
+
+                /*String b = (String) context.get(PROPERTY);
                 System.out.println("#######################\n" + b + "############################");
 
 
@@ -117,7 +138,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
                 if (sh == null)
                     sh = se.addHeader();
                 // add header element
-                
+
                 Name name = se.createName("mac", "sec", "http://ws.binas.org/");
                 SOAPHeaderElement element = sh.addHeaderElement(name);
 
@@ -126,12 +147,22 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
                 //Create the cyphered request to put on the Header
                 CipheredView MACToSend = computeAndCipherMAC(request);
                 byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getData());
+
                 System.out.println(new String(encodedBytes));
                 element.addTextNode(new String(encodedBytes));
 
 
+
+
+
+                CipheredView cipheredMACWrapper = new CipheredView();
+                cipheredMACWrapper.setData(encodedBytes);
+                CipheredView decipheredMACWrapper = SecurityHelper.decipher(CipheredView.class, cipheredMACWrapper, SESSIONKEY);
+                byte[] receivedMac = decipheredMACWrapper.getData();
+                System.out.println(new String(receivedMac));*/
+
             } else if(!outboundElement.booleanValue() && !isClient){
-                System.out.println("MAChandler ignores...");
+               /* System.out.println("MAChandler ignores...");
 
                 System.out.println("Reading header from INbound SOAP message...");
 
@@ -151,21 +182,25 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
                 NodeList userIdNode = sh.getElementsByTagNameNS("http://ws.binas.org/", MAC);
 
                 String valueString = userIdNode.item(0).getChildNodes().item(0).getNodeValue();
-
+                System.out.println(valueString);
                 byte[] encodedBytes = Base64.getDecoder().decode(valueString);
+                System.out.println(encodedBytes);
+
                 CipheredView cipheredMac = new CipheredView();
                 cipheredMac.setData(encodedBytes);
                 String receivedMac = decipherMAC(cipheredMac);
 
-                String receivedRequest = extractContentFromContextToString(context);
+                /*String receivedRequest = extractContentFromContextToString(context);
 
                 System.out.println("############################################");
                 System.out.println(receivedMac);
                 System.out.println(computeMAC(receivedRequest));
                 System.out.println("############################################");
 
-                if(!receivedMac.equals(computeMAC(receivedRequest)))
+                if(!receivedMac.equals(computeMAC(receivedRequest))){
+                    System.out.println("RIP MAC :'( THIS IS SO SAD");
                     throw new RuntimeException();
+                }*/
 
             }
 
@@ -187,7 +222,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
     }
 
-    public static void setSESSIONKEY(SessionKey SESSIONKEY) {
+    public static void setSESSIONKEY(Key SESSIONKEY) {
         MACHandler.SESSIONKEY = SESSIONKEY;
     }
     public static void setIsClient(Boolean isClient) {
