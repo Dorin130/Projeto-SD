@@ -30,10 +30,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
+    private static final String SESSION_KEY = "sessionKey";
+    private static final String REQUEST_TIME = "requestTime";
+
     Properties properties;
     Key serverKey;
     long timeLeeway = 1000;
-    static Map<String, Key> sessionKeys = new ConcurrentHashMap<>();
     static Map<String, Long> lastRequestTime = new ConcurrentHashMap<>();
 
     public KerberosServerHandler() {
@@ -73,7 +75,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
 
     @Override
     public boolean handleMessage(SOAPMessageContext smc) {
-        System.out.println("KerberosServerHandler: Handling message.");
+        System.out.println("---------------------------- KerberosServerHandler: Handling message. ----------------------------");
 
         Boolean outboundElement = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
 
@@ -88,13 +90,17 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPHeader sh = se.getHeader();
 
                 String s_ticket = sh.getElementsByTagNameNS("http://ws.binas.org/", "ticket").item(0).getTextContent();
+                System.out.println("- Got cyphered ticket:");
                 byte[] ticketDecodedBytes = Base64.getDecoder().decode(s_ticket);
+                System.out.println(s_ticket);
 
                 CipheredView ticketView = new CipheredView();
                 ticketView.setData(ticketDecodedBytes);
 
+                System.out.println("- Ticket:");
                 Ticket ticket = new Ticket(ticketView, serverKey);
                 ticket.validate(); //necessary?
+                System.out.println(ticket.toString());
 
                 if(ticket.getTime2().before(new Date())) {
                     System.out.println("SECURITY WARNING: ticket expired");
@@ -105,13 +111,17 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 }
 
                 String s_auth = sh.getElementsByTagNameNS("http://ws.binas.org/", "auth").item(0).getTextContent();
+                System.out.println("- Got cyphered auth:");
                 byte[] decodedBytes = Base64.getDecoder().decode(s_auth);
+                System.out.println(s_auth);
 
                 CipheredView authView = new CipheredView();
                 authView.setData(decodedBytes);
 
+                System.out.println("- Auth:");
                 Auth auth = new Auth(authView, ticket.getKeyXY());
                 auth.validate();  //necessary?
+                System.out.println(auth.authToString());
 
                 if(auth.getTimeRequest().before(ticket.getTime1()) || auth.getTimeRequest().after(ticket.getTime2())) {
                     System.out.println("SECURITY WARNING: time request outside bounds");
@@ -121,12 +131,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                     throw new RuntimeException("SECURITY WARNING: request too old");
                 }
 
-                /*
-                QName opn = (QName) smc.get(MessageContext.WSDL_OPERATION);
-                opn.getLocalPart();
-                */
                 String operation = msg.getSOAPBody().getFirstChild().getLocalName();
-                System.out.println(operation);
 
                 lastRequestTime.putIfAbsent(auth.getX(), (long)-1);
                 if(auth.getTimeRequest().getTime() < lastRequestTime.get(auth.getX()) &&
@@ -134,12 +139,9 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                     System.out.println("SECURITY WARNING: repeat attack possibility");
                     throw new RuntimeException("SECURITY WARNING: repeat attack possibility");
                 }
-                sessionKeys.put(auth.getX(), ticket.getKeyXY());
+                smc.put(SESSION_KEY, ticket.getKeyXY());
                 lastRequestTime.put(auth.getX(), auth.getTimeRequest().getTime());
-
-                //for authentication handler
-                Name name = se.createName("user", "sec", "http://ws.binas.org/");
-                sh.addHeaderElement(name).addTextNode(auth.getX());
+                smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
 
             } else {
                 // get SOAP envelope
@@ -150,17 +152,17 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
 
                 System.out.println("Writing auth (reply) to OUTbound SOAP message...");
 
-                Name name = se.createName("auth", "sec", "http://ws.binas.org/");
+                Name name = se.createName("requestTime", "sec", "http://ws.binas.org/");
                 SOAPHeaderElement element = sh.addHeaderElement(name);
 
-                String user = ""; //TODO THIS
-                CipheredView authReply = new CipheredView();
-                //byte[] encodedBytes = Base64.getEncoder().encode(Long.toString(lastRequestTime.get(user)).getBytes());
-                authReply.setData(Long.toString(lastRequestTime.get(user)).getBytes());
+                Key sessionKey = (Key) smc.get(SESSION_KEY);
+                System.out.println("- Generated Request Time:");
+                RequestTime requestTime = (RequestTime) smc.get(REQUEST_TIME);
+                System.out.println(requestTime.requestTimeToString());
 
-                authReply = SecurityHelper.cipher(CipheredView.class, authReply, sessionKeys.get(user));
-
-                byte[] encodedBytes = Base64.getEncoder().encode(authReply.getData());
+                System.out.println("- Sent RequestTime:");
+                byte[] encodedBytes = Base64.getEncoder().encode(requestTime.cipher(sessionKey).getData());
+                System.out.println(new String(encodedBytes));
                 element.addTextNode(new String(encodedBytes));
 
                 System.out.println("KerberosClientHandler ignores...");
@@ -171,6 +173,8 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             e.printStackTrace();
             System.out.println("Continue normal processing...");
         }
+
+        System.out.println("-------------------------- KerberosClientHandler: END Handling message. --------------------------");
 
         return true;
     }
