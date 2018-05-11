@@ -125,8 +125,9 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 element = sh.addHeaderElement(name);
 
                 // add header element value
-                Auth auth = new Auth(properties.getProperty("client"), new Date());
-                encodedBytes = Base64.getEncoder().encode(auth.cipher(clientKey).getData());
+                Auth auth = new Auth(properties.getProperty("user"), new Date());
+
+                encodedBytes = Base64.getEncoder().encode(auth.cipher(sessionKey.getKeyXY()).getData());
                 element.addTextNode(new String(encodedBytes));
 
             } else {

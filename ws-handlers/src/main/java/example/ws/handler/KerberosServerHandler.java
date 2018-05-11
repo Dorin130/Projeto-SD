@@ -56,7 +56,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
         }
 
         try {
-            this.serverKey = SecurityHelper.generateKeyFromPassword(properties.getProperty("pass"));
+            this.serverKey = SecurityHelper.generateKeyFromPassword(properties.getProperty("binasPw"));
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             throw new RuntimeException();
@@ -75,10 +75,10 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
     public boolean handleMessage(SOAPMessageContext smc) {
         System.out.println("KerberosServerHandler: Handling message.");
 
-        Boolean inboundElement = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
+        Boolean outboundElement = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
 
         try {
-            if (inboundElement.booleanValue()) {
+            if (!outboundElement.booleanValue()) {
                 System.out.println("Receiving inbound SOAP message...");
 
                 // get SOAP envelope
@@ -87,7 +87,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPEnvelope se = sp.getEnvelope();
                 SOAPHeader sh = se.getHeader();
 
-                String s_ticket = sh.getElementsByTagNameNS("http://ws.binas.org/", "ticket").item(0).toString();
+                String s_ticket = sh.getElementsByTagNameNS("http://ws.binas.org/", "ticket").item(0).getTextContent();
                 byte[] ticketDecodedBytes = Base64.getDecoder().decode(s_ticket);
 
                 CipheredView ticketView = new CipheredView();
@@ -104,7 +104,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                     throw new RuntimeException("SECURITY WARNING: system clock out of sync");
                 }
 
-                String s_auth = sh.getElementsByTagNameNS("http://ws.binas.org/", "auth").item(0).toString();
+                String s_auth = sh.getElementsByTagNameNS("http://ws.binas.org/", "auth").item(0).getTextContent();
                 byte[] decodedBytes = Base64.getDecoder().decode(s_auth);
 
                 CipheredView authView = new CipheredView();
@@ -168,7 +168,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             }
         } catch (Exception e) {
             System.out.print("Caught exception in handleMessage: ");
-            System.out.println(e);
+            e.printStackTrace();
             System.out.println("Continue normal processing...");
         }
 
