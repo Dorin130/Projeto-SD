@@ -19,6 +19,9 @@ import java.util.*;
 
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
+
+    private static final String CONTEXT_SESSION_KEY = "SESSIONKEY";
+
     Properties properties;
     SecureRandom secureRandom;
     TicketCollection ticketCollection;
@@ -94,6 +97,8 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
 
+                MACHandler.setSESSIONKEY(sessionKey);
+
                 CipheredView ticketView = sktv.getTicket();
 
                 if (sessionKey.getNounce() != nonce) {
@@ -128,6 +133,15 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 Auth auth = new Auth(properties.getProperty("client"), new Date());
                 encodedBytes = Base64.getEncoder().encode(auth.cipher(clientKey).getData());
                 element.addTextNode(new String(encodedBytes));
+
+
+                // put header in a property context
+                smc.put(CONTEXT_SESSION_KEY, sessionKey);
+                smc.put("test", "HEEEEEEEEEEEEEEEEEEEY");
+                // set property scope to application client/server class can
+                // access it
+                smc.setScope(CONTEXT_SESSION_KEY, MessageContext.Scope.APPLICATION);
+                smc.setScope("test", MessageContext.Scope.APPLICATION);
 
             } else {
                 System.out.println("KerberosClientHandler ignores...");

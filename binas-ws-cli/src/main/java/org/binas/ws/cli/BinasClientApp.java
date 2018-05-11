@@ -1,5 +1,6 @@
 package org.binas.ws.cli;
 
+import example.ws.handler.MACHandler;
 import org.binas.ws.*;
 
 public class BinasClientApp {
@@ -54,7 +55,10 @@ public class BinasClientApp {
                 uddiURL, wsName);
             client = new BinasClient(uddiURL, wsName);
         }
-        System.out.println(client.testPing("oi"));/*
+        MACHandler.setIsClient(true);
+        System.out.println(client.testPing("oi"));
+        //System.out.println(client.testPing("oi2"));
+         /*
         setup(client);
         activateUsers(client);
         run(client);

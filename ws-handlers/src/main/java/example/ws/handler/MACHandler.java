@@ -1,9 +1,7 @@
 package example.ws.handler;
 
-import pt.ulisboa.tecnico.sdis.kerby.CipherClerk;
-import pt.ulisboa.tecnico.sdis.kerby.CipheredView;
-import pt.ulisboa.tecnico.sdis.kerby.KerbyException;
-import pt.ulisboa.tecnico.sdis.kerby.SecurityHelper;
+import org.w3c.dom.NodeList;
+import pt.ulisboa.tecnico.sdis.kerby.*;
 
 import javax.xml.namespace.QName;
 import javax.xml.soap.*;
@@ -28,7 +26,10 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
     CipherClerk cipherClerk;
     SecurityHelper securityHelper;
 
-    public static Key SESSIONKEY;
+    private String bla = "kek";
+    private final String PROPERTY = "test";
+    private boolean onlyOne = true;
+    public static SessionKey SESSIONKEY;
 
     public static Boolean isClient = false; //Need to know if the handler is being executed in the client Side or in the server side
 
@@ -62,15 +63,19 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         return new String(mac);
 
     }
-
-    public CipheredView computeAndCipherMAC(String message) throws NoSuchAlgorithmException, KerbyException {
-        String calculatedMac = computeMAC(message);
-
-        return SecurityHelper.cipher(String.class, calculatedMac, SESSIONKEY);
+    public String decipherMAC(CipheredView cipheredMACWrapper) throws KerbyException {
+        CipheredView decipheredMACWrapper = SecurityHelper.decipher(CipheredView.class, cipheredMACWrapper, SESSIONKEY.getKeyXY());
+        byte[] receivedMac = decipheredMACWrapper.getData();
+        return new String(receivedMac);
     }
 
-    public boolean compareMAC(String MACReceived, String message) throws NoSuchAlgorithmException {
-        return MACReceived.equals(computeMAC(message));
+    public CipheredView computeAndCipherMAC(String message) throws NoSuchAlgorithmException, KerbyException {
+
+        String calculatedMac = computeMAC(message);
+        CipheredView wrapper = new CipheredView();
+        wrapper.setData(calculatedMac.getBytes());
+
+        return SecurityHelper.cipher(CipheredView.class, wrapper, SESSIONKEY.getKeyXY());
     }
 
     private String extractContentFromContextToString(SOAPMessageContext context) throws SOAPException, TransformerException {
@@ -92,9 +97,12 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
        System.out.println("MACHandler: Handling message.");
 
         Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
-
         try {
             if (outboundElement.booleanValue() && isClient) { //clientSide
+                String b = (String) context.get(PROPERTY);
+                System.out.println("#######################\n" + b + "############################");
+
+
 
                 System.out.println("Writing header to OUTbound SOAP message...");
 
@@ -108,27 +116,26 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPHeader sh = se.getHeader();
                 if (sh == null)
                     sh = se.addHeader();
-
                 // add header element
-                Name name = se.createName(MAC, "sec", "http://ws.binas.org/");
+                
+                Name name = se.createName("mac", "sec", "http://ws.binas.org/");
                 SOAPHeaderElement element = sh.addHeaderElement(name);
-
 
                 //Extract SOAP body to get,
                 String request = extractContentFromContextToString(context);
-
                 //Create the cyphered request to put on the Header
                 CipheredView MACToSend = computeAndCipherMAC(request);
-
                 byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getData());
-
+                System.out.println(new String(encodedBytes));
                 element.addTextNode(new String(encodedBytes));
 
 
             } else if(!outboundElement.booleanValue() && !isClient){
+                System.out.println("MAChandler ignores...");
+
                 System.out.println("Reading header from INbound SOAP message...");
 
-
+                context.put(PROPERTY, new String("hey"));
                 // get SOAP envelope header
                 SOAPMessage msg = context.getMessage();
                 SOAPPart sp = msg.getSOAPPart();
@@ -141,32 +148,27 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
                     return true;
                 }
 
-                // get first header element
-                Name name = se.createName(MAC, "sec", "http://ws.binas.org/");
-                Iterator<?> it = sh.getChildElements(name);
-                // check header element
-                if (!it.hasNext()) {
-                    System.out.println("Header element not found.");
-                    return true;
-                }
-                SOAPElement element = (SOAPElement) it.next();
+                NodeList userIdNode = sh.getElementsByTagNameNS("http://ws.binas.org/", MAC);
 
-                // get header element value
-                String valueString = element.getValue();
+                String valueString = userIdNode.item(0).getChildNodes().item(0).getNodeValue();
 
                 byte[] encodedBytes = Base64.getDecoder().decode(valueString);
                 CipheredView cipheredMac = new CipheredView();
                 cipheredMac.setData(encodedBytes);
-                String receivedMac = SecurityHelper.decipher(String.class, cipheredMac, SESSIONKEY );
-
+                String receivedMac = decipherMAC(cipheredMac);
 
                 String receivedRequest = extractContentFromContextToString(context);
 
-                if(!compareMAC(receivedMac, computeMAC(receivedRequest)))
+                System.out.println("############################################");
+                System.out.println(receivedMac);
+                System.out.println(computeMAC(receivedRequest));
+                System.out.println("############################################");
+
+                if(!receivedMac.equals(computeMAC(receivedRequest)))
                     throw new RuntimeException();
 
-
             }
+
         } catch (Exception e) {
             System.out.print("Caught exception in handleMessage: ");
             System.out.println(e);
@@ -185,8 +187,10 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
     }
 
-    public static void setSESSIONKEY(Key SESSIONKEY) {
+    public static void setSESSIONKEY(SessionKey SESSIONKEY) {
         MACHandler.SESSIONKEY = SESSIONKEY;
     }
-
+    public static void setIsClient(Boolean isClient) {
+        MACHandler.isClient = isClient;
+    }
 }
