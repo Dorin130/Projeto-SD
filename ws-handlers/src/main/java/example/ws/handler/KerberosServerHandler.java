@@ -99,7 +99,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
 
                 System.out.println("- Ticket:");
                 Ticket ticket = new Ticket(ticketView, serverKey);
-                MACHandler.setSESSIONKEY(ticket.getKeyXY());
+
                 ticket.validate(); //necessary?
                 System.out.println(ticket.toString());
 
@@ -143,6 +143,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 smc.put(SESSION_KEY, ticket.getKeyXY());
                 lastRequestTime.put(auth.getX(), auth.getTimeRequest().getTime());
                 smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
+
 
             } else {
                 // get SOAP envelope

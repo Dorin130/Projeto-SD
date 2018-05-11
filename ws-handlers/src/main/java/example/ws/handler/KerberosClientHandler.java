@@ -103,7 +103,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
                 System.out.println(sessionKey.toString());
 
-                MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
+               // MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
 
                 CipheredView ticketView = sktv.getTicket();
 
