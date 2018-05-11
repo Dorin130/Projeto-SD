@@ -59,9 +59,10 @@
             Print the SOAP message with added indentation for easier reading.
         -->
 
-        <!--handler>
+
+        <!--<handler>
             <handler-class>example.ws.handler.PrettyLogHandler</handler-class>
-        </handler-->
+        </handler>-->
 
 
         <handler>

@@ -20,7 +20,9 @@ import java.util.*;
 
 public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
-    private static final String CONTEXT_SESSION_KEY = "SESSIONKEY";
+    private static final String SESSION_KEY = "sessionKey";
+    private static final String TIME_REQUEST = "timeRequest";
+
 
     Properties properties;
     SecureRandom secureRandom;
@@ -74,7 +76,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
     @Override
     public boolean handleMessage(SOAPMessageContext smc) {
-        System.out.println("KerberosClientHandler: Handling message.");
+        System.out.println("---------------------------- KerberosClientHandler: Handling message. ----------------------------");
 
         Boolean outboundElement = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
 
@@ -82,7 +84,9 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
             if (outboundElement.booleanValue()) {
                 System.out.println("Writing ticket to OUTbound SOAP message...");
 
+                System.out.println("- Generated nonce:");
                 long nonce = secureRandom.nextLong();
+                System.out.println(nonce);
 
                 SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
 
@@ -95,7 +99,9 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                     ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
                 }
 
+                System.out.println("- SessionKey:");
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
+                System.out.println(sessionKey.toString());
 
                 MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
 
@@ -121,19 +127,26 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPHeaderElement element = sh.addHeaderElement(name);
 
                 // add header element value
+                System.out.println(" - Sent Ticket:");
                 byte[] encodedBytes = Base64.getEncoder().encode(ticketView.getData());
                 element.addTextNode(new String(encodedBytes));
-
-                System.out.println("Writing auth to OUTbound SOAP message...");
+                System.out.println(new String(encodedBytes));
 
                 name = se.createName("auth", "sec", "http://ws.binas.org/");
                 element = sh.addHeaderElement(name);
 
                 // add header element value
+                System.out.println(" - Generated Auth:");
                 Auth auth = new Auth(properties.getProperty("user"), new Date());
+                System.out.println(auth.authToString());
 
+                System.out.println(" - Sent Auth:");
                 encodedBytes = Base64.getEncoder().encode(auth.cipher(sessionKey.getKeyXY()).getData());
                 element.addTextNode(new String(encodedBytes));
+                System.out.println(new String(encodedBytes));
+
+                smc.put(SESSION_KEY, sessionKey.getKeyXY());
+                smc.put(TIME_REQUEST, auth.getTimeRequest());
 
 
                 // put header in a property context
@@ -144,7 +157,32 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 //smc.setScope("test", MessageContext.Scope.APPLICATION);
 
             } else {
-                System.out.println("KerberosClientHandler ignores...");
+                System.out.println("Receiving inbound SOAP message...");
+
+                // get SOAP envelope
+                SOAPMessage msg = smc.getMessage();
+                SOAPPart sp = msg.getSOAPPart();
+                SOAPEnvelope se = sp.getEnvelope();
+                SOAPHeader sh = se.getHeader();
+
+                System.out.println(" - Got Ciphered Request Time:");
+                String s_requestTime = sh.getElementsByTagNameNS("http://ws.binas.org/", "requestTime").item(0).getTextContent();
+                System.out.println(s_requestTime);
+
+                System.out.println(" - Got  Request Time:");
+                byte[] reqTimeDecodedBytes = Base64.getDecoder().decode(s_requestTime);
+                CipheredView reqTimeCV = new CipheredView();
+                reqTimeCV.setData(reqTimeDecodedBytes);
+
+                RequestTime requestTime = new RequestTime(reqTimeCV, (Key) smc.get(SESSION_KEY));
+                System.out.println(requestTime.requestTimeToString());
+                Date timeOfRequest = (Date) smc.get(TIME_REQUEST);
+
+
+                if(requestTime.getTimeRequest().getTime() != timeOfRequest.getTime()) {
+                    System.out.println("SECURITY WARNING: Wrong request time");
+                    throw new RuntimeException("SECURITY WARNING: Wrong request time");
+                }
 
             }
         } catch (Exception e) {
@@ -152,6 +190,8 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
             System.out.println(e);
             System.out.println("Continue normal processing...");
         }
+
+        System.out.println("---------------------------KerberosClientHandler: END Handling message. ---------------------------");
 
         return true;
     }
