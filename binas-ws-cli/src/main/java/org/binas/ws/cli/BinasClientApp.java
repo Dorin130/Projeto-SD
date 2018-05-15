@@ -55,7 +55,6 @@ public class BinasClientApp {
                 uddiURL, wsName);
             client = new BinasClient(uddiURL, wsName);
         }
-        MACHandler.setIsClient(true);
         System.out.println(client.testPing("oi"));
         //System.out.println(client.testPing("oi2"));
          /*
