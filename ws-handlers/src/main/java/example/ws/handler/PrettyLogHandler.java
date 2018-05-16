@@ -95,13 +95,6 @@ public class PrettyLogHandler implements SOAPHandler<SOAPMessageContext> {
 		try {
 			SOAPMessage message = smc.getMessage();
 			Source src = message.getSOAPPart().getContent();
-			/*SOAPBody element = smc.getMessage().getSOAPBody();
-			DOMSource source = new DOMSource(element);
-			StringWriter stringResult = new StringWriter();
-			TransformerFactory.newInstance().newTransformer().transform(source, new StreamResult(stringResult));
-			String out2 = stringResult.toString();
-			System.out.println("HEEEEEEEEEY");
-			System.out.println(out2);*/
 			// transform the (DOM) Source into a StreamResult
 			Transformer transformer = transformerFactory.newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");

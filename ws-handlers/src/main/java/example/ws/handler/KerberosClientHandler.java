@@ -26,7 +26,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
     Properties properties;
     SecureRandom secureRandom;
-    TicketCollection ticketCollection;
+    static TicketCollection ticketCollection;
     KerbyClient kerbyClient;
     CipherClerk cipherClerk;
     Key clientKey;
@@ -91,7 +91,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
 
                 if (sktv == null) {
-                    long expirationTime = (new Date()).getTime() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000;
+                    long expirationTime = (System.currentTimeMillis() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000;
 
                     sktv = kerbyClient.requestTicket(properties.getProperty("user"),
                             properties.getProperty("binas"), nonce, Integer.parseInt(properties.getProperty("ticketTime")));
