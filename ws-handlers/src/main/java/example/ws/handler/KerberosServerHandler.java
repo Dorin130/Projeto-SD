@@ -115,7 +115,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 if(auth.getTimeRequest().before(ticket.getTime1()) || auth.getTimeRequest().after(ticket.getTime2())) {
                     System.out.println("SECURITY WARNING: time request outside bounds");
                     throw new RuntimeException("SECURITY WARNING: time request outside bounds");
-                } else if(auth.getTimeRequest().getTime() + this.timeLeeway < System.currentTimeMillis().getTime()) {
+                } else if(auth.getTimeRequest().getTime() + this.timeLeeway < System.currentTimeMillis()) {
                     System.out.println("SECURITY WARNING: request too old");
                     throw new RuntimeException("SECURITY WARNING: request too old");
                 }

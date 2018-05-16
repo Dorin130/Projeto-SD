@@ -1,13 +1,13 @@
 package example.ws.handler;
 
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.crypto.*;
+import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.namespace.QName;
 import javax.xml.soap.*;
-import javax.xml.transform.*;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.ws.handler.MessageContext;
@@ -30,6 +30,8 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
     private static final String MACPROVIDER = "HmacSHA512";
 
 
+
+
     public String computeMAC(String message, Key sessionKey) {
 
         byte [] byteKey = sessionKey.getEncoded();
@@ -42,8 +44,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
             return new String(mac_data);
 
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            System.out.println("MACHandler: error trying to compute the MAC");
-           throw new RuntimeException(e);
+           throw new RuntimeException("MACHandler: error trying to compute the MAC");
         }
     }
 
@@ -72,9 +73,6 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
     private String extractMACfromSOAPHeader(SOAPHeader sh) {
         NodeList userIdNode = sh.getElementsByTagNameNS(URI, MAC);
-        System.out.println("##################################################");
-        System.out.println(userIdNode.item(0).getChildNodes().getLength());
-        System.out.println("##################################################");
 
         if(userIdNode == null || userIdNode.getLength() == 0 ||
                 (userIdNode.item(0) != null && userIdNode.item(0).getChildNodes().getLength() == 0)) {
@@ -114,7 +112,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
     @Override
     public boolean handleMessage(SOAPMessageContext context) {
 
-       System.out.println("MACHandler: Handling message.");
+        System.out.println("---------------------------- MACHandler: Handling message. ----------------------------");
 
         Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
         try {
@@ -164,6 +162,8 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         } catch (SOAPException | TransformerException e) {
             throw new RuntimeException("MACHandler: error trying to process the message");
         }
+        System.out.println("---------------------------- MACHandler: END Handling message. ----------------------------");
+
         return true;
     }
 

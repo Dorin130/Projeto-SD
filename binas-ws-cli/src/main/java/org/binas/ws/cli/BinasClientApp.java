@@ -55,8 +55,8 @@ public class BinasClientApp {
                 uddiURL, wsName);
             client = new BinasClient(uddiURL, wsName);
         }
-        //System.out.println(client.getCredit("alice@A17.binas.org"));
-        //System.out.println(client.testPing("oi"));
+        System.out.println(client.getCredit("alice@A17.binas.org"));
+        System.out.println(client.testPing("oi"));
         //client.activateUser()
         //System.out.println(client.testPing("oi"));
         //System.out.println(client.testPing("oi2"));

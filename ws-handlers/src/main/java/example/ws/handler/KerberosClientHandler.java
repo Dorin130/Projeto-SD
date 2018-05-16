@@ -82,35 +82,42 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
         try {
             if (outboundElement.booleanValue()) {
+                boolean shouldVerifyNonce = false;
+                long nonce = 0;
                 System.out.println("Writing ticket to OUTbound SOAP message...");
 
                 System.out.println("- Generated nonce:");
-                long nonce = secureRandom.nextLong();
-              //  System.out.println(nonce);
+
+                //System.out.println(nonce);
 
                 SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
 
                 if (sktv == null) {
-                    long expirationTime = (System.currentTimeMillis() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000;
+                    nonce = secureRandom.nextLong();
+                    shouldVerifyNonce = true;
+                    long expirationTime = (System.currentTimeMillis() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000);
 
                     sktv = kerbyClient.requestTicket(properties.getProperty("user"),
                             properties.getProperty("binas"), nonce, Integer.parseInt(properties.getProperty("ticketTime")));
 
                     ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
+
                 }
 
                 System.out.println("- SessionKey:");
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
-                //System.out.println(sessionKey.toString());
+                System.out.println(sessionKey.toString());
 
-               // MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
 
                 CipheredView ticketView = sktv.getTicket();
 
-                if (sessionKey.getNounce() != nonce) {
+                System.out.println("- ticket nonce:");
+                System.out.println(sessionKey.getNounce());
+
+                if (shouldVerifyNonce && sessionKey.getNounce() != nonce) {
                     System.out.println("SECURITY WARNING: nonce mismatch");
                     throw new RuntimeException("SECURITY WARNING: nonce mismatch");
-                }
+                } 
 
                 // get SOAP envelope
                 SOAPMessage msg = smc.getMessage();
