@@ -123,8 +123,6 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
                 Key sessionKey = (Key) context.get(SESSION_KEY);
 
-                System.out.println(sessionKey.getEncoded());
-
                 System.out.println("Writing header to OUTbound SOAP message...");
 
                 // get SOAP envelope
