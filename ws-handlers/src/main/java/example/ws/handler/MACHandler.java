@@ -70,7 +70,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getBytes());
 
         System.out.println("MACHandler: Inserting the MAC in the header");
-        //MACHeaderElement.addTextNode(new String(encodedBytes));
+        MACHeaderElement.addTextNode(new String(encodedBytes));
     }
 
     private void handleInboundMessage(SOAPMessageContext context) throws SOAPException, TransformerException {
