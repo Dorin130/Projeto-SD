@@ -33,8 +33,6 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
         // load configuration properties
         try {
             InputStream inputStream = KerberosClientHandler.class.getClassLoader().getResourceAsStream("config.properties");
-            // variant for non-static methods:
-            // InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
 
             properties.load(inputStream);
 
@@ -56,9 +54,9 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
         }
     }
 
-    @Override
-    public Set<QName> getHeaders() {
-        return null;//TODO
+    private void handleKerberosServerHandlerError(String clientError, String serverError) {
+        System.out.println(serverError);
+        throw new RuntimeException(clientError);
     }
 
     @Override
@@ -70,97 +68,10 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
         try {
             if (!outboundElement.booleanValue()) {
                 System.out.println("Receiving inbound SOAP message...");
-
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-                SOAPHeader sh = se.getHeader();
-
-                String s_ticket = sh.getElementsByTagNameNS("http://ws.binas.org/", "ticket").item(0).getTextContent();
-                System.out.println("- Got cyphered ticket:");
-                byte[] ticketDecodedBytes = Base64.getDecoder().decode(s_ticket);
-                System.out.println(s_ticket);
-
-                CipheredView ticketView = new CipheredView();
-                ticketView.setData(ticketDecodedBytes);
-
-                System.out.println("- Ticket:");
-                Ticket ticket = new Ticket(ticketView, serverKey);
-
-                ticket.validate(); //necessary?
-                System.out.println(ticket.toString());
-
-                if(ticket.getTime2().before(new Date())) {
-                    System.out.println("SECURITY WARNING: ticket expired");
-                    throw new RuntimeException("SECURITY WARNING: ticket expired");
-                } else if (ticket.getTime1().after(new Date())) {
-                    System.out.println("SECURITY WARNING: system clock out of sync");
-                    throw new RuntimeException("SECURITY WARNING: system clock out of sync");
-                }
-
-                String s_auth = sh.getElementsByTagNameNS("http://ws.binas.org/", "auth").item(0).getTextContent();
-                System.out.println("- Got cyphered auth:");
-                byte[] decodedBytes = Base64.getDecoder().decode(s_auth);
-                System.out.println(s_auth);
-
-                CipheredView authView = new CipheredView();
-                authView.setData(decodedBytes);
-
-                System.out.println("- Auth:");
-                Auth auth = new Auth(authView, ticket.getKeyXY());
-                auth.validate();  //necessary?
-                System.out.println(auth.authToString());
-
-                if(auth.getTimeRequest().before(ticket.getTime1()) || auth.getTimeRequest().after(ticket.getTime2())) {
-                    System.out.println("SECURITY WARNING: time request outside bounds");
-                    throw new RuntimeException("SECURITY WARNING: time request outside bounds");
-                } else if(auth.getTimeRequest().getTime() + this.timeLeeway < System.currentTimeMillis()) {
-                    System.out.println("SECURITY WARNING: request too old");
-                    throw new RuntimeException("SECURITY WARNING: request too old");
-                }
-
-                String operation = msg.getSOAPBody().getFirstChild().getLocalName();
-
-                lastRequestTime.putIfAbsent(auth.getX(), (long)-1);
-                if(auth.getTimeRequest().getTime() < lastRequestTime.get(auth.getX()) &&
-                        (operation == "rentBina" || operation == "returnBina")    ) {
-                    System.out.println("SECURITY WARNING: repeat attack possibility");
-                    throw new RuntimeException("SECURITY WARNING: repeat attack possibility");
-                }
-                smc.put(SESSION_KEY, ticket.getKeyXY());
-                lastRequestTime.put(auth.getX(), auth.getTimeRequest().getTime());
-                smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
-
-                System.out.println("######################################");
-                System.out.println(ticket.getX());
-                System.out.println("######################################");
-                smc.put(CLIENT_NAME, ticket.getX());
-
-
+                handleInBoundMessage(smc);
             } else {
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-                SOAPHeader sh = se.getHeader();
-
-                System.out.println("Writing auth (reply) to OUTbound SOAP message...");
-
-                Name name = se.createName("requestTime", "sec", "http://ws.binas.org/");
-                SOAPHeaderElement element = sh.addHeaderElement(name);
-
-                Key sessionKey = (Key) smc.get(SESSION_KEY);
-                System.out.println("- Generated Request Time:");
-                RequestTime requestTime = (RequestTime) smc.get(REQUEST_TIME);
-                System.out.println(requestTime.requestTimeToString());
-
-                System.out.println("- Sent RequestTime:");
-                byte[] encodedBytes = Base64.getEncoder().encode(requestTime.cipher(sessionKey).getData());
-                System.out.println(new String(encodedBytes));
-                element.addTextNode(new String(encodedBytes));
-
-                System.out.println("KerberosClientHandler ignores...");
+                System.out.println("Receiving outBound SOAP message...");
+                buildOutBoundHeader(smc);
 
             }
         } catch (Exception e) {
@@ -169,9 +80,152 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             System.out.println("Continue normal processing...");
         }
 
-        System.out.println("-------------------------- KerberosClientHandler: END Handling message. --------------------------");
+        System.out.println("-------------------------- KerberosServerHandler: END Handling message. --------------------------");
 
         return true;
+    }
+
+
+
+    private void handleInBoundMessage(SOAPMessageContext smc)  {
+
+        try {
+            // get SOAP envelope
+            SOAPMessage msg = smc.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+            SOAPHeader sh = se.getHeader();
+
+            System.out.println("KerberosServerHandler: Validating the ticket");
+            Ticket ticket  = getAndValidateTicket(sh);
+            System.out.println("KerberosServerHandler: the ticket is valid");
+
+            System.out.println("KerberosServerHandler: Validating the auth");
+            Auth auth = getAndValidateAuth(sh, ticket);
+            System.out.println("KerberosServerHandler: the auth is valid");
+
+            //Check if there has been a possible repeat attack
+            String operation = msg.getSOAPBody().getFirstChild().getLocalName();
+            lastRequestTime.putIfAbsent(auth.getX(), (long)-1);
+            if(auth.getTimeRequest().getTime() < lastRequestTime.get(auth.getX()) &&
+                    (operation == "rentBina" || operation == "returnBina")    ) {
+                handleKerberosServerHandlerError("Binas: invalid request ",
+                        "KerberosServerHandler: SECURITY WARNING repeat attack possibility");
+            }
+
+
+            smc.put(SESSION_KEY, ticket.getKeyXY());
+            lastRequestTime.put(auth.getX(), auth.getTimeRequest().getTime());
+            smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
+            smc.put(CLIENT_NAME, ticket.getX());
+
+            System.out.println("KerberosServerHandler: OK");
+
+
+        } catch (SOAPException e) {
+            handleKerberosServerHandlerError("Binas: invalid request message",
+                    "KerberosServerHandler: error trying to handle the SOAP message");
+        }
+    }
+
+    private Ticket getAndValidateTicket(SOAPHeader sh)  {
+
+        try {
+            String s_ticket = sh.getElementsByTagNameNS("http://ws.binas.org/", "ticket").item(0).getTextContent();
+
+            byte[] ticketDecodedBytes = Base64.getDecoder().decode(s_ticket);
+
+            CipheredView ticketView = new CipheredView();
+            ticketView.setData(ticketDecodedBytes);
+
+            Ticket ticket = new Ticket(ticketView, serverKey);
+
+            ticket.validate();
+
+            if(ticket.getTime2().before(new Date())) {
+                handleKerberosServerHandlerError("Binas: invalid request ",
+                        "KerberosServerHandler: SECURITY WARNING ticket expired");
+            } else if (ticket.getTime1().after(new Date())) {
+                handleKerberosServerHandlerError("Binas: invalid request ",
+                        "KerberosServerHandler: SECURITY WARNING system clock out of sync");
+            }
+
+            return ticket;
+        } catch (KerbyException e) {
+            handleKerberosServerHandlerError("Binas: invalid request ",
+                    "KerberosServerHandler: error creating the ticket");
+        }
+        return null;
+    }
+
+    private Auth getAndValidateAuth(SOAPHeader sh, Ticket ticket) {
+
+
+        try {
+            String s_auth = sh.getElementsByTagNameNS("http://ws.binas.org/", "auth").item(0).getTextContent();
+            byte[] decodedBytes = Base64.getDecoder().decode(s_auth);
+
+
+            CipheredView authView = new CipheredView();
+            authView.setData(decodedBytes);
+
+            Auth auth = new Auth(authView, ticket.getKeyXY());
+            auth.validate();
+
+
+            if(auth.getTimeRequest().before(ticket.getTime1()) || auth.getTimeRequest().after(ticket.getTime2())) {
+                handleKerberosServerHandlerError("Binas: invalid request ",
+                        "KerberosServerHandler: SECURITY WARNING  time request outside bounds");
+            } else if(auth.getTimeRequest().getTime() + this.timeLeeway < System.currentTimeMillis()) {
+                handleKerberosServerHandlerError("Binas: invalid request ",
+                        "KerberosServerHandler: SECURITY WARNING request too old");
+            }
+            return auth;
+        } catch (KerbyException e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
+
+    private void buildOutBoundHeader(SOAPMessageContext smc) {
+
+
+        try {
+            System.out.println("KerberosServerHandler: building the header");
+            // get SOAP envelope
+            SOAPMessage msg = smc.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+            SOAPHeader sh = se.getHeader();
+
+            //create the element
+            Name name = se.createName("requestTime", "sec", "http://ws.binas.org/");
+            SOAPHeaderElement element = sh.addHeaderElement(name);
+
+            System.out.println("KerberosServerHandler: getting the request time");
+            Key sessionKey = (Key) smc.get(SESSION_KEY);
+            RequestTime requestTime = (RequestTime) smc.get(REQUEST_TIME);
+
+            //add the request time to the element
+            System.out.println("KerberosServerHandler: inserting the request time in the header");
+            byte[] encodedBytes = Base64.getEncoder().encode(requestTime.cipher(sessionKey).getData());
+            element.addTextNode(new String(encodedBytes));
+
+        } catch (SOAPException e) {
+            handleKerberosServerHandlerError("Binas: an unexpected internal error happened ",
+                    "KerberosServerHandler: error trying to build the header");
+        } catch (KerbyException e) {
+            handleKerberosServerHandlerError("Binas: invalid request ",
+                    "KerberosServerHandler: error trying to cipher the ticket");
+        }
+
+    }
+
+    @Override
+    public Set<QName> getHeaders() {
+        return null;//TODO
     }
 
     @Override
@@ -180,7 +234,5 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
     }
 
     @Override
-    public void close(MessageContext context) {
-        //TODO
-    }
+    public void close(MessageContext context) { }
 }

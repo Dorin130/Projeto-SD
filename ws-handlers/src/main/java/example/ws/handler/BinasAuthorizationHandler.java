@@ -15,6 +15,35 @@ public class BinasAuthorizationHandler implements SOAPHandler<SOAPMessageContext
     private static final String CLIENT_NAME = "clientName";
 
 
+    @Override
+    public boolean handleMessage(SOAPMessageContext context) {
+        System.out.println("---------------------------- BinasAuthorizationHandler: Handling message. ----------------------------");
+
+        Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
+
+        if (!outboundElement.booleanValue()) {
+            System.out.println("BinasAuthorizationHandler: Receiving inbound SOAP message...");
+
+            String clientName = (String) context.get(CLIENT_NAME);
+
+            String requestClientName = getClientNameFromRequestBody(context);
+            System.out.println("BinasAuthorizationHandler: validating the user email and request email");
+            if(requestClientName != null && !clientName.equals(requestClientName))
+                handleBinasAuthorizationError("BinasAuthorizationHandler: SECURITY WARNING mismatch in client emails",
+                        "Binas: error trying to authorize your request");
+            else
+                System.out.println("BinasAuthorizationHandler: OK");
+
+        } else {
+            System.out.println("BinasAuthorizationHandler: Receiving outbound SOAP message... ignoring");
+
+        }
+
+        System.out.println("-------------------------- BinasAuthorizationHandler: END Handling message. --------------------------");
+
+        return true;
+    }
+
     private void handleBinasAuthorizationError(String serverErrorMessage, String clientErrorMessage) {
         System.out.println(serverErrorMessage);
         throw new RuntimeException(clientErrorMessage);
@@ -40,36 +69,6 @@ public class BinasAuthorizationHandler implements SOAPHandler<SOAPMessageContext
         }
         return null;
     }
-
-    @Override
-    public boolean handleMessage(SOAPMessageContext context) {
-        System.out.println("---------------------------- BinasAuthorizationHandler: Handling message. ----------------------------");
-
-        Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
-
-        if (!outboundElement.booleanValue()) {
-            System.out.println("BinasAuthorizationHandler: Receiving inbound SOAP message...");
-
-            String clientName = (String) context.get(CLIENT_NAME);
-
-            String requestClientName = getClientNameFromRequestBody(context);
-
-            if(requestClientName != null && !clientName.equals(requestClientName))
-                handleBinasAuthorizationError("BinasAuthorizationHandler: SECURITY WARNING mismatch in client emails",
-                        "Binas: error trying to authorize your request");
-            else
-                System.out.println("BinasAuthorizationHandler: OK");
-
-        } else {
-            System.out.println("BinasAuthorizationHandler: Receiving outbound SOAP message... ignoring");
-
-        }
-
-        System.out.println("-------------------------- BinasAuthorizationHandler: END Handling message. --------------------------");
-
-        return true;
-    }
-
 
     @Override
     public boolean handleFault(SOAPMessageContext context) {return false; }

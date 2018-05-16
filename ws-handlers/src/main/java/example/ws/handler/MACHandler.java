@@ -31,23 +31,96 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
 
 
+    @Override
+    public boolean handleMessage(SOAPMessageContext context) {
 
-    public String computeMAC(String message, Key sessionKey) {
+        System.out.println("---------------------------- MACHandler: Handling message. ----------------------------");
 
-        byte [] byteKey = sessionKey.getEncoded();
-
+        Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
         try {
-            Mac sha512_HMAC = Mac.getInstance(MACPROVIDER);
-            SecretKeySpec keySpec = new SecretKeySpec(byteKey, MACPROVIDER);
-            sha512_HMAC.init(keySpec);
-            byte [] mac_data = sha512_HMAC.doFinal(message.getBytes());
-            return new String(mac_data);
+            if (outboundElement.booleanValue()) { //Outbound
+                System.out.println("MACHandler: Writing header to OUTbound SOAP message.");
+                handleOutboundMessage(context);
 
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-           throw new RuntimeException("MACHandler: error trying to compute the MAC");
+            } else if(!outboundElement.booleanValue()){ //Inbound
+                handleInboundMessage(context);
+            }
+
+        } catch (SOAPException | TransformerException e) {
+            throw new RuntimeException("MACHandler: error trying to process the message");
+        }
+        System.out.println("---------------------------- MACHandler: END Handling message. ----------------------------");
+
+        return true;
+    }
+
+    private void handleOutboundMessage(SOAPMessageContext context) throws TransformerException, SOAPException {
+        // get SOAP envelope
+        Key sessionKey = (Key) context.get(SESSION_KEY);
+
+        //build the header to insert the MAC
+        System.out.println("MACHandler: building the header");
+        SOAPHeaderElement MACHeaderElement = buildHeaderElement(context);
+
+        //Extract SOAP body to get the request
+        String request = getSoapBody(context);
+
+        System.out.println("MACHandler: computing the MAC");
+        String MACToSend = computeMAC(request, sessionKey);
+        byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getBytes());
+
+        System.out.println("MACHandler: Inserting the MAC in the header");
+        //MACHeaderElement.addTextNode(new String(encodedBytes));
+    }
+
+    private void handleInboundMessage(SOAPMessageContext context) throws SOAPException, TransformerException {
+        System.out.println("MACHandler: Reading header from INbound SOAP message...");
+
+        Key sessionKey = (Key) context.get(SESSION_KEY);
+
+        SOAPHeader sh = getHeader( context);
+        if(sh == null) {
+            throw new RuntimeException("MACHandler: SECURITY WARNING missing headers in inbound message");
+        }
+
+
+        //extract the MAC from the header element
+        String receivedMAC = extractMACfromSOAPHeader(sh);
+
+        String receivedRequest = getSoapBody(context);
+        System.out.println("MACHandler: computing the MAC");
+        String computedMAC = computeMAC(receivedRequest, sessionKey);
+
+
+        System.out.println("MACHandler: validating received MAC");
+        if(!receivedMAC.equals(computedMAC)){
+            throw new RuntimeException("MACHandler: SECURITY WARNING mismatch in calculated MAC and received MAC");
+        }else {
+            System.out.println("MACHandler: OK Calculated MAC and received MAC are a match" );
         }
     }
 
+    private SOAPHeaderElement buildHeaderElement(SOAPMessageContext context) {
+
+        try {
+
+            SOAPMessage msg = context.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+
+            // add header
+            SOAPHeader sh = getHeader(context);
+            if (sh == null)
+                sh = se.addHeader();
+
+            // add header element
+            Name name = se.createName(MAC, SEC, URI);
+            return sh.addHeaderElement(name);
+
+        } catch (SOAPException e) {
+            throw new RuntimeException("MACHandler: error trying to build the header element");
+        }
+    }
 
     private String getSoapBody(SOAPMessageContext smc) throws SOAPException, TransformerException {
         SOAPBody element = smc.getMessage().getSOAPBody();
@@ -83,90 +156,25 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
         byte[] decodedBytes = Base64.getDecoder().decode(macNode);
 
-       return new String(decodedBytes);
+        return new String(decodedBytes);
 
     }
 
-    private SOAPHeaderElement buildHeaderElement(SOAPMessageContext context) {
+    public String computeMAC(String message, Key sessionKey) {
+
+        byte [] byteKey = sessionKey.getEncoded();
 
         try {
+            Mac sha512_HMAC = Mac.getInstance(MACPROVIDER);
+            SecretKeySpec keySpec = new SecretKeySpec(byteKey, MACPROVIDER);
+            sha512_HMAC.init(keySpec);
+            byte [] mac_data = sha512_HMAC.doFinal(message.getBytes());
+            return new String(mac_data);
 
-            SOAPMessage msg = context.getMessage();
-            SOAPPart sp = msg.getSOAPPart();
-            SOAPEnvelope se = sp.getEnvelope();
-
-            // add header
-            SOAPHeader sh = getHeader(context);
-            if (sh == null)
-                sh = se.addHeader();
-
-            // add header element
-            Name name = se.createName(MAC, SEC, URI);
-            return sh.addHeaderElement(name);
-
-        } catch (SOAPException e) {
-            throw new RuntimeException("MACHandler: error trying to build the header element");
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException("MACHandler: error trying to compute the MAC");
         }
     }
-
-    @Override
-    public boolean handleMessage(SOAPMessageContext context) {
-
-        System.out.println("---------------------------- MACHandler: Handling message. ----------------------------");
-
-        Boolean outboundElement = (Boolean) context.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
-        try {
-            if (outboundElement.booleanValue()) { //Outbound
-                System.out.println("MACHandler: Writing header to OUTbound SOAP message.");
-
-                // get SOAP envelope
-                Key sessionKey = (Key) context.get(SESSION_KEY);
-
-                //build the header to insert the MAC
-                SOAPHeaderElement MACHeaderElement = buildHeaderElement(context);
-
-                //Extract SOAP body to get the request
-                String request = getSoapBody(context);
-
-
-                String MACToSend = computeMAC(request, sessionKey);
-                byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getBytes());
-
-               MACHeaderElement.addTextNode(new String(encodedBytes));
-
-
-            } else if(!outboundElement.booleanValue()){ //Inbound
-
-                System.out.println("MACHandler: Reading header from INbound SOAP message...");
-
-                Key sessionKey = (Key) context.get(SESSION_KEY);
-
-                SOAPHeader sh = getHeader(context);
-                if(sh == null) {
-                    throw new RuntimeException("MACHandler: SECURITY WARNING missing headers in inbound message");
-                }
-
-                //extract the MAC from the header element
-                String receivedMAC = extractMACfromSOAPHeader(sh);
-
-                String receivedRequest = getSoapBody(context);
-                String computedMAC = computeMAC(receivedRequest, sessionKey);
-
-                if(!receivedMAC.equals(computedMAC)){
-                    throw new RuntimeException("MACHandler: SECURITY WARNING mismatch in calculated MAC and received MAC");
-                }else {
-                    System.out.println("MACHandler: OK Calculated MAC and received MAC are a match" );
-                }
-            }
-
-        } catch (SOAPException | TransformerException e) {
-            throw new RuntimeException("MACHandler: error trying to process the message");
-        }
-        System.out.println("---------------------------- MACHandler: END Handling message. ----------------------------");
-
-        return true;
-    }
-
 
     @Override
     public boolean handleFault(SOAPMessageContext context) {return false; }

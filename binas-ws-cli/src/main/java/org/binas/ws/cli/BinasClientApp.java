@@ -1,6 +1,5 @@
 package org.binas.ws.cli;
 
-import example.ws.handler.MACHandler;
 import org.binas.ws.*;
 
 public class BinasClientApp {

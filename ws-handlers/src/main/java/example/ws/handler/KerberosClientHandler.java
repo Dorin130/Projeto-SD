@@ -1,5 +1,7 @@
 package example.ws.handler;
 
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import pt.ulisboa.tecnico.sdis.kerby.*;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClient;
 import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClientException;
@@ -23,13 +25,13 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
     private static final String SESSION_KEY = "sessionKey";
     private static final String TIME_REQUEST = "timeRequest";
 
-
     Properties properties;
     SecureRandom secureRandom;
     static TicketCollection ticketCollection;
     KerbyClient kerbyClient;
     CipherClerk cipherClerk;
     Key clientKey;
+
 
     public KerberosClientHandler() {
         super();
@@ -41,9 +43,6 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
         // load configuration properties
         try {
             InputStream inputStream = KerberosClientHandler.class.getClassLoader().getResourceAsStream("config.properties");
-            // variant for non-static methods:
-            // InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
-
             properties.load(inputStream);
 
             System.out.printf("Loaded %d properties%n", properties.size());
@@ -57,21 +56,10 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
             this.clientKey = SecurityHelper.generateKeyFromPassword(properties.getProperty("pass"));
             this.kerbyClient = new KerbyClient(properties.getProperty("kerbyWs"));
         } catch (KerbyClientException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-            throw new RuntimeException();
+            throw new RuntimeException("KerberosClientHandler: error trying to initialize the kerby client");
+        }catch( NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException("KerberosClientHandler: error trying to initialize the handler");
         }
-    }
-
-
-    @Override
-    public Set<QName> getHeaders() {
-        return null;//TODO
     }
 
     @Override
@@ -82,125 +70,152 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
         try {
             if (outboundElement.booleanValue()) {
-                boolean shouldVerifyNonce = false;
-                long nonce = 0;
-                System.out.println("Writing ticket to OUTbound SOAP message...");
-
-                System.out.println("- Generated nonce:");
-
-                //System.out.println(nonce);
-
-                SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
-
-                if (sktv == null) {
-                    nonce = secureRandom.nextLong();
-                    shouldVerifyNonce = true;
-                    long expirationTime = (System.currentTimeMillis() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000);
-
-                    sktv = kerbyClient.requestTicket(properties.getProperty("user"),
-                            properties.getProperty("binas"), nonce, Integer.parseInt(properties.getProperty("ticketTime")));
-
-                    ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
-
-                }
-
-                System.out.println("- SessionKey:");
-                SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
-                System.out.println(sessionKey.toString());
-
-
-                CipheredView ticketView = sktv.getTicket();
-
-                System.out.println("- ticket nonce:");
-                System.out.println(sessionKey.getNounce());
-
-                if (shouldVerifyNonce && sessionKey.getNounce() != nonce) {
-                    System.out.println("SECURITY WARNING: nonce mismatch");
-                    throw new RuntimeException("SECURITY WARNING: nonce mismatch");
-                } 
-
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-
-                // add header
-                SOAPHeader sh = se.getHeader();
-                if (sh == null)
-                    sh = se.addHeader();
-
-                // add header element (name, namespace prefix, namespace)
-                Name name = se.createName("ticket", "sec", "http://ws.binas.org/");
-                SOAPHeaderElement element = sh.addHeaderElement(name);
-
-                // add header element value
-                System.out.println(" - Sent Ticket:");
-                byte[] encodedBytes = Base64.getEncoder().encode(ticketView.getData());
-                element.addTextNode(new String(encodedBytes));
-                System.out.println(new String(encodedBytes));
-
-                name = se.createName("auth", "sec", "http://ws.binas.org/");
-                element = sh.addHeaderElement(name);
-
-                // add header element value
-                System.out.println(" - Generated Auth:");
-                Auth auth = new Auth(properties.getProperty("user"), new Date());
-                System.out.println(auth.authToString());
-
-                System.out.println(" - Sent Auth:");
-                encodedBytes = Base64.getEncoder().encode(auth.cipher(sessionKey.getKeyXY()).getData());
-                element.addTextNode(new String(encodedBytes));
-                System.out.println(new String(encodedBytes));
-
-                smc.put(SESSION_KEY, sessionKey.getKeyXY());
-                smc.put(TIME_REQUEST, auth.getTimeRequest());
-
-
-                // put header in a property context
-                //smc.put(CONTEXT_SESSION_KEY, sessionKey);
-                // set property scope to application client/server class can
-                // access it
-                //smc.setScope(CONTEXT_SESSION_KEY, MessageContext.Scope.APPLICATION);
-                //smc.setScope("test", MessageContext.Scope.APPLICATION);
+                System.out.println("Receiving outbound SOAP message...");
+                handleOutboundMessage(smc);
 
             } else {
                 System.out.println("Receiving inbound SOAP message...");
-
-                // get SOAP envelope
-                SOAPMessage msg = smc.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-                SOAPHeader sh = se.getHeader();
-
-               // System.out.println(" - Got Ciphered Request Time:");
-                String s_requestTime = sh.getElementsByTagNameNS("http://ws.binas.org/", "requestTime").item(0).getTextContent();
-                //System.out.println(s_requestTime);
-
-                //System.out.println(" - Got  Request Time:");
-                byte[] reqTimeDecodedBytes = Base64.getDecoder().decode(s_requestTime);
-                CipheredView reqTimeCV = new CipheredView();
-                reqTimeCV.setData(reqTimeDecodedBytes);
-
-                RequestTime requestTime = new RequestTime(reqTimeCV, (Key) smc.get(SESSION_KEY));
-                //System.out.println(requestTime.requestTimeToString());
-                Date timeOfRequest = (Date) smc.get(TIME_REQUEST);
-
-
-                if(requestTime.getTimeRequest().getTime() != timeOfRequest.getTime()) {
-                    System.out.println("SECURITY WARNING: Wrong request time");
-                    throw new RuntimeException("SECURITY WARNING: Wrong request time");
-                }
-
+                handleInboundMessage(smc);
             }
-        } catch (Exception e) {
-            System.out.print("Caught exception in handleMessage: ");
-            System.out.println(e);
-            System.out.println("Continue normal processing...");
+        } catch (KerbyException e) {
+            throw new RuntimeException("KerberosClientHandler: error trying to process the message");
+        } catch (BadTicketRequest_Exception e) {
+            throw new RuntimeException("KerberosClientHandler: error trying to request a new ticket");
         }
 
         System.out.println("---------------------------KerberosClientHandler: END Handling message. ---------------------------");
 
         return true;
+    }
+
+    private void handleOutboundMessage(SOAPMessageContext smc) throws BadTicketRequest_Exception, KerbyException {
+        boolean shouldVerifyNonce = false;
+        long nonce = 0;
+
+        //get session key from ticketCollection
+        SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
+
+        //build new ticket if first time or the other on as expired
+        if (sktv == null) {
+            nonce = secureRandom.nextLong();
+            shouldVerifyNonce = true;
+            long expirationTime = (System.currentTimeMillis() + Integer.parseInt(properties.getProperty("ticketTime")) * 1000);
+
+            sktv = kerbyClient.requestTicket(properties.getProperty("user"),
+                    properties.getProperty("binas"), nonce, Integer.parseInt(properties.getProperty("ticketTime")));
+
+            ticketCollection.storeTicket(properties.getProperty("binas"), sktv, expirationTime);
+
+        }
+
+        //build session key, ticket and auth
+        System.out.println("KerberosClientHandler: Creating the SessionKey");
+        SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
+        System.out.println("KerberosClientHandler: Creating the Ticket");
+        CipheredView ticketView = sktv.getTicket();
+        System.out.println("KerberosClientHandler: Creating the Auth");
+        Auth auth = new Auth(properties.getProperty("user"), new Date());
+        CipheredView authView = auth.cipher(sessionKey.getKeyXY());
+
+
+        if (shouldVerifyNonce && sessionKey.getNounce() != nonce) {
+            System.out.println("SECURITY WARNING: nonce mismatch");
+            throw new RuntimeException("SECURITY WARNING: nonce mismatch");
+        }
+
+        //Prepare the header to be sent
+        System.out.println("KerberosClientHandler: Building the header");
+        buildHeader(smc, ticketView, authView);
+
+        //insert useful objects in message context
+        smc.put(SESSION_KEY, sessionKey.getKeyXY());
+        smc.put(TIME_REQUEST, auth.getTimeRequest());
+    }
+
+    private void handleInboundMessage(SOAPMessageContext smc) throws KerbyException {
+        String s_requestTime = extractRequestTimeFromSOAPMessage(smc);
+
+        byte[] reqTimeDecodedBytes = Base64.getDecoder().decode(s_requestTime);
+        CipheredView reqTimeCV = new CipheredView();
+        reqTimeCV.setData(reqTimeDecodedBytes);
+
+        RequestTime requestTime = new RequestTime(reqTimeCV, (Key) smc.get (SESSION_KEY));
+
+        Date timeOfRequest = (Date) smc.get(TIME_REQUEST);
+
+        System.out.println("KerberosClientHandler: Validating received request time");
+        if(requestTime.getTimeRequest().getTime() != timeOfRequest.getTime()) {
+            throw new RuntimeException("KerberosClientHandler: SECURITY WARNING Wrong request time");
+        }
+        System.out.println("KerberosClientHandler: OK");
+
+    }
+
+    private void buildHeader(SOAPMessageContext context,CipheredView ticketView, CipheredView authView) {
+        try {
+            // get SOAP envelope
+            SOAPMessage msg = context.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+
+            // add header
+            SOAPHeader sh = se.getHeader();
+            if (sh == null)
+                sh = se.addHeader();
+
+            //insert ticket in the header
+            System.out.println("KerberosClientHandler: Inserting the ticket in the header");
+            buildHeaderElement(se, sh, ticketView, "ticket", "sec", "http://ws.binas.org/");
+
+            //insert auth in the header
+            System.out.println("KerberosClientHandler: Inserting the auth in the header");
+            buildHeaderElement(se, sh, authView, "auth", "sec", "http://ws.binas.org/");
+
+        } catch (SOAPException e) {
+            throw new RuntimeException("KerberosClientHandler: error trying to build the header");
+        }
+    }
+
+    private void  buildHeaderElement(SOAPEnvelope se, SOAPHeader sh, CipheredView cipheredView,
+                                     String localName, String prefix, String uri) throws SOAPException {
+
+        // add header element (name, namespace prefix, namespace)
+        Name name = se.createName(localName, prefix, uri);
+        SOAPHeaderElement element = sh.addHeaderElement(name);
+
+        // add header element value
+        byte[] encodedBytes = Base64.getEncoder().encode(cipheredView.getData());
+        element.addTextNode(new String(encodedBytes));
+
+    }
+
+    private String extractRequestTimeFromSOAPMessage(SOAPMessageContext smc) {
+
+        try {
+            // get SOAP envelope
+            SOAPMessage msg = smc.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+            SOAPHeader sh = se.getHeader();
+
+            NodeList elementList = sh.getElementsByTagNameNS("http://ws.binas.org/", "requestTime");
+            if(elementList != null && elementList.getLength() > 0) {
+                Node node = elementList.item(0);
+                if(node != null) {
+                    return node.getTextContent();
+                }
+            }
+            return null;
+
+        } catch (SOAPException e) {
+            throw new RuntimeException("KerberosClientHandler: error trying to extract the request time from the SOAP message");
+        }
+
+    }
+
+    @Override
+    public Set<QName> getHeaders() {
+        return null;//TODO
     }
 
     @Override
