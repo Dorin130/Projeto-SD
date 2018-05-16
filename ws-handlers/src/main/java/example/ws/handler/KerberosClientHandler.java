@@ -86,7 +86,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
                 System.out.println("- Generated nonce:");
                 long nonce = secureRandom.nextLong();
-                System.out.println(nonce);
+              //  System.out.println(nonce);
 
                 SessionKeyAndTicketView sktv = ticketCollection.getTicket(properties.getProperty("binas"));
 
@@ -101,7 +101,7 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
 
                 System.out.println("- SessionKey:");
                 SessionKey sessionKey = new SessionKey(sktv.getSessionKey(), clientKey);
-                System.out.println(sessionKey.toString());
+                //System.out.println(sessionKey.toString());
 
                // MACHandler.setSESSIONKEY(sessionKey.getKeyXY());
 
@@ -165,17 +165,17 @@ public class KerberosClientHandler implements SOAPHandler<SOAPMessageContext> {
                 SOAPEnvelope se = sp.getEnvelope();
                 SOAPHeader sh = se.getHeader();
 
-                System.out.println(" - Got Ciphered Request Time:");
+               // System.out.println(" - Got Ciphered Request Time:");
                 String s_requestTime = sh.getElementsByTagNameNS("http://ws.binas.org/", "requestTime").item(0).getTextContent();
-                System.out.println(s_requestTime);
+                //System.out.println(s_requestTime);
 
-                System.out.println(" - Got  Request Time:");
+                //System.out.println(" - Got  Request Time:");
                 byte[] reqTimeDecodedBytes = Base64.getDecoder().decode(s_requestTime);
                 CipheredView reqTimeCV = new CipheredView();
                 reqTimeCV.setData(reqTimeDecodedBytes);
 
                 RequestTime requestTime = new RequestTime(reqTimeCV, (Key) smc.get(SESSION_KEY));
-                System.out.println(requestTime.requestTimeToString());
+                //System.out.println(requestTime.requestTimeToString());
                 Date timeOfRequest = (Date) smc.get(TIME_REQUEST);
 
 

@@ -1,5 +1,6 @@
 package example.ws.handler;
 
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.crypto.*;
@@ -39,6 +40,7 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
             sha512_HMAC.init(keySpec);
             byte [] mac_data = sha512_HMAC.doFinal(message.getBytes());
             return new String(mac_data);
+
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             System.out.println("MACHandler: error trying to compute the MAC");
            throw new RuntimeException(e);
@@ -54,9 +56,59 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         return stringResult.toString();
     }
 
-    @Override
-    public Set<QName> getHeaders() {
-        return null;
+
+    private SOAPHeader getHeader(SOAPMessageContext context) throws SOAPException {
+        SOAPMessage msg = context.getMessage();
+        SOAPPart sp = msg.getSOAPPart();
+        SOAPEnvelope se = sp.getEnvelope();
+        SOAPHeader sh = se.getHeader();
+
+        if (sh == null) {
+            System.out.println("MACHandler: Header not found.");
+            return null;
+        }
+        return sh;
+    }
+
+    private String extractMACfromSOAPHeader(SOAPHeader sh) {
+        NodeList userIdNode = sh.getElementsByTagNameNS(URI, MAC);
+        System.out.println("##################################################");
+        System.out.println(userIdNode.item(0).getChildNodes().getLength());
+        System.out.println("##################################################");
+
+        if(userIdNode == null || userIdNode.getLength() == 0 ||
+                (userIdNode.item(0) != null && userIdNode.item(0).getChildNodes().getLength() == 0)) {
+            throw new RuntimeException("MACHandler: SECURITY WARNING missing MAC in inbound message");
+        }
+
+        String macNode = userIdNode.item(0).getChildNodes().item(0).getNodeValue();
+
+        byte[] decodedBytes = Base64.getDecoder().decode(macNode);
+
+       return new String(decodedBytes);
+
+    }
+
+    private SOAPHeaderElement buildHeaderElement(SOAPMessageContext context) {
+
+        try {
+
+            SOAPMessage msg = context.getMessage();
+            SOAPPart sp = msg.getSOAPPart();
+            SOAPEnvelope se = sp.getEnvelope();
+
+            // add header
+            SOAPHeader sh = getHeader(context);
+            if (sh == null)
+                sh = se.addHeader();
+
+            // add header element
+            Name name = se.createName(MAC, SEC, URI);
+            return sh.addHeaderElement(name);
+
+        } catch (SOAPException e) {
+            throw new RuntimeException("MACHandler: error trying to build the header element");
+        }
     }
 
     @Override
@@ -71,28 +123,18 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
                 // get SOAP envelope
                 Key sessionKey = (Key) context.get(SESSION_KEY);
-                SOAPMessage msg = context.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
 
-                // add header
+                //build the header to insert the MAC
+                SOAPHeaderElement MACHeaderElement = buildHeaderElement(context);
 
-                SOAPHeader sh = se.getHeader();
-                if (sh == null)
-                    sh = se.addHeader();
-                // add header element
-
-                Name name = se.createName(MAC, SEC, URI);
-                SOAPHeaderElement element = sh.addHeaderElement(name);
-
-                //Extract SOAP body to get,
+                //Extract SOAP body to get the request
                 String request = getSoapBody(context);
 
-                //Create the cyphered request to put on the Header
+
                 String MACToSend = computeMAC(request, sessionKey);
                 byte[] encodedBytes = Base64.getEncoder().encode(MACToSend.getBytes());
 
-                element.addTextNode(new String(encodedBytes));
+               MACHeaderElement.addTextNode(new String(encodedBytes));
 
 
             } else if(!outboundElement.booleanValue()){ //Inbound
@@ -101,29 +143,18 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
 
                 Key sessionKey = (Key) context.get(SESSION_KEY);
 
-                SOAPMessage msg = context.getMessage();
-                SOAPPart sp = msg.getSOAPPart();
-                SOAPEnvelope se = sp.getEnvelope();
-                SOAPHeader sh = se.getHeader();
-
-                if (sh == null) {
-                    System.out.println("MACHandler: Header not found.");
-                    return true;
+                SOAPHeader sh = getHeader(context);
+                if(sh == null) {
+                    throw new RuntimeException("MACHandler: SECURITY WARNING missing headers in inbound message");
                 }
 
-                NodeList userIdNode = sh.getElementsByTagNameNS(URI, MAC);
-                String valueString = userIdNode.item(0).getChildNodes().item(0).getNodeValue();
-
-                byte[] decodedBytes = Base64.getDecoder().decode(valueString);
-
-
-
-                String ReceivedMAC = new String(decodedBytes);
+                //extract the MAC from the header element
+                String receivedMAC = extractMACfromSOAPHeader(sh);
 
                 String receivedRequest = getSoapBody(context);
                 String computedMAC = computeMAC(receivedRequest, sessionKey);
 
-                if(!ReceivedMAC.equals(computedMAC)){
+                if(!receivedMAC.equals(computedMAC)){
                     throw new RuntimeException("MACHandler: SECURITY WARNING mismatch in calculated MAC and received MAC");
                 }else {
                     System.out.println("MACHandler: OK Calculated MAC and received MAC are a match" );
@@ -136,14 +167,14 @@ public class MACHandler implements SOAPHandler<SOAPMessageContext> {
         return true;
     }
 
-    @Override
-    public boolean handleFault(SOAPMessageContext context) {
-        return false;
-    }
 
     @Override
-    public void close(MessageContext context) {
+    public boolean handleFault(SOAPMessageContext context) {return false; }
 
-    }
+    @Override
+    public Set<QName> getHeaders() {return null; }
+
+    @Override
+    public void close(MessageContext context) {   }
 
 }

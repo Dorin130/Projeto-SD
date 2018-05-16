@@ -1,29 +1,16 @@
 package example.ws.handler;
 
 import pt.ulisboa.tecnico.sdis.kerby.*;
-
-
-import javax.crypto.Cipher;
 import javax.xml.namespace.QName;
 import javax.xml.ws.handler.MessageContext;
 import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 import java.security.Key;
-import java.time.LocalDate;
 import java.util.Set;
-
 import javax.xml.soap.*;
-
 import java.util.*;
-
-
-import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClient;
-import pt.ulisboa.tecnico.sdis.kerby.cli.KerbyClientException;
-
-
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
     private static final String SESSION_KEY = "sessionKey";
     private static final String REQUEST_TIME = "requestTime";
+    private static final String CLIENT_NAME = "clientName";
 
     Properties properties;
     Key serverKey;
@@ -143,6 +131,11 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
                 smc.put(SESSION_KEY, ticket.getKeyXY());
                 lastRequestTime.put(auth.getX(), auth.getTimeRequest().getTime());
                 smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
+
+                System.out.println("######################################");
+                System.out.println(ticket.getX());
+                System.out.println("######################################");
+                smc.put(CLIENT_NAME, ticket.getX());
 
 
             } else {
