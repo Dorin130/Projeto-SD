@@ -16,7 +16,7 @@ import java.util.Set;
 public class BinasAuthorizationHandler implements SOAPHandler<SOAPMessageContext> {
 
     private static final String CLIENT_NAME = "clientName";
-    private static final Set<String> AUTH_REQ = new HashSet<>(Arrays.asList(new String[] {"activateUser", "returnBina", "rentBina", "getCredit"}));
+    private static final Set<String> AUTH_REQ = new HashSet<>(Arrays.asList("activateUser", "returnBina", "rentBina", "getCredit"));
 
 
     @Override
@@ -30,16 +30,16 @@ public class BinasAuthorizationHandler implements SOAPHandler<SOAPMessageContext
 
             String clientName = (String) context.get(CLIENT_NAME);
             try {
-                if (AUTH_REQ.contains(context.getMessage().getSOAPBody().getFirstChild().getLocalName())) {
-
+                if (!AUTH_REQ.contains(context.getMessage().getSOAPBody().getFirstChild().getLocalName())) {
+                    return true;
                 }
             } catch (SOAPException e) {
-                e.printStackTrace();
+                handleBinasAuthorizationError("BinasAuthorizationHandler: error trying to get the client name from the soap message body",
+                        "Binas: error trying to handle your request");
             }
 
 
             String requestClientName = getClientNameFromRequestBody(context);
-            System.out.println(requestClientName);
             //System.out.println("BinasAuthorizationHandler: validating the user email and request email");
             if(requestClientName != null && !clientName.equals(requestClientName))
                 handleBinasAuthorizationError("BinasAuthorizationHandler: SECURITY WARNING mismatch in client emails",
