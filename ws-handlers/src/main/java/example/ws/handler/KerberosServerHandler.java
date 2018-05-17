@@ -67,10 +67,10 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
 
         try {
             if (!outboundElement.booleanValue()) {
-                System.out.println("Receiving inbound SOAP message...");
+                //System.out.println("Receiving inbound SOAP message...");
                 handleInBoundMessage(smc);
             } else {
-                System.out.println("Receiving outBound SOAP message...");
+                //System.out.println("Receiving outBound SOAP message...");
                 buildOutBoundHeader(smc);
 
             }
@@ -80,7 +80,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             System.out.println("Continue normal processing...");
         }
 
-        System.out.println("-------------------------- KerberosServerHandler: END Handling message. --------------------------");
+        //System.out.println("-------------------------- KerberosServerHandler: END Handling message. --------------------------");
 
         return true;
     }
@@ -96,13 +96,13 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             SOAPEnvelope se = sp.getEnvelope();
             SOAPHeader sh = se.getHeader();
 
-            System.out.println("KerberosServerHandler: Validating the ticket");
+            //System.out.println("KerberosServerHandler: Validating the ticket");
             Ticket ticket  = getAndValidateTicket(sh);
-            System.out.println("KerberosServerHandler: the ticket is valid");
+            //System.out.println("KerberosServerHandler: the ticket is valid");
 
-            System.out.println("KerberosServerHandler: Validating the auth");
+            //System.out.println("KerberosServerHandler: Validating the auth");
             Auth auth = getAndValidateAuth(sh, ticket);
-            System.out.println("KerberosServerHandler: the auth is valid");
+            //System.out.println("KerberosServerHandler: the auth is valid");
 
             //Check if there has been a possible repeat attack
             String operation = msg.getSOAPBody().getFirstChild().getLocalName();
@@ -119,7 +119,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             smc.put(REQUEST_TIME, new RequestTime(auth.getTimeRequest()));
             smc.put(CLIENT_NAME, ticket.getX());
 
-            System.out.println("KerberosServerHandler: OK");
+            //System.out.println("KerberosServerHandler: OK");
 
 
         } catch (SOAPException e) {
@@ -141,6 +141,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             Ticket ticket = new Ticket(ticketView, serverKey);
 
             ticket.validate();
+
 
             if(ticket.getTime2().before(new Date())) {
                 handleKerberosServerHandlerError("Binas: invalid request ",
@@ -193,7 +194,7 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
 
 
         try {
-            System.out.println("KerberosServerHandler: building the header");
+            //System.out.println("KerberosServerHandler: building the header");
             // get SOAP envelope
             SOAPMessage msg = smc.getMessage();
             SOAPPart sp = msg.getSOAPPart();
@@ -204,12 +205,12 @@ public class KerberosServerHandler implements SOAPHandler<SOAPMessageContext> {
             Name name = se.createName("requestTime", "sec", "http://ws.binas.org/");
             SOAPHeaderElement element = sh.addHeaderElement(name);
 
-            System.out.println("KerberosServerHandler: getting the request time");
+            //System.out.println("KerberosServerHandler: getting the request time");
             Key sessionKey = (Key) smc.get(SESSION_KEY);
             RequestTime requestTime = (RequestTime) smc.get(REQUEST_TIME);
 
             //add the request time to the element
-            System.out.println("KerberosServerHandler: inserting the request time in the header");
+            //System.out.println("KerberosServerHandler: inserting the request time in the header");
             byte[] encodedBytes = Base64.getEncoder().encode(requestTime.cipher(sessionKey).getData());
             element.addTextNode(new String(encodedBytes));
 

@@ -3,6 +3,10 @@
     <handler-chain>
 
         <handler>
+            <handler-class>example.ws.handler.PrettyLogHandler</handler-class>
+        </handler>
+
+        <handler>
             <handler-class>example.ws.handler.KerberosClientHandler</handler-class>
         </handler>
 
@@ -10,8 +14,8 @@
             <handler-class>example.ws.handler.MACHandler</handler-class>
         </handler>
 
-        <!--handler>
+        <handler>
             <handler-class>example.ws.handler.PrettyLogHandler</handler-class>
-        </handler-->
+        </handler>
     </handler-chain>
 </handler-chains>

@@ -86,6 +86,8 @@ public class PrettyLogHandler implements SOAPHandler<SOAPMessageContext> {
 		Boolean outbound = (Boolean) smc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
 
 		// print current time stamp
+		out.println("---------------------------- PrettyLogHandler: Display message. ----------------------------");
+
 		Date now = new Date();
 		out.print(dateFormat.format(now));
 		// print SOAP message direction
