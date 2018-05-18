@@ -14,9 +14,9 @@
             <handler-class>example.ws.handler.MACHandler</handler-class>
         </handler>
 
-        <handler>
+        <!--handler>
             <handler-class>example.ws.handler.EvilHandler</handler-class>
-        </handler>
+        </handler-->
 
         <handler>
             <handler-class>example.ws.handler.PrettyLogHandler</handler-class>

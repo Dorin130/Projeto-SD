@@ -33,9 +33,9 @@ public class BinasClientApp {
             client = new BinasClient(uddiURL, wsName);
         }
         // F1
-        //client.activateUser("alice@A17.binas.org");
+        client.activateUser("alice@A17.binas.org");
         // F2
-        client.activateUser("eve@A17.binas.org");
+        //client.activateUser("eve@A17.binas.org");
 
     }
 }
